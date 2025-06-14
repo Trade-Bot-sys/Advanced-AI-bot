@@ -8,39 +8,47 @@ from angelone_api import get_available_funds
 def manual_trade_ui(stock_list, take_profit=10, stop_loss=3):  
     st.subheader("📥 Manual Trade")
 
-    # ✅ Get available funds from Angel One
+    # ✅ Get available funds
     available_funds = get_available_funds()
     st.sidebar.write(f"💰 Available Funds: ₹{available_funds:.2f}")
 
-    # ✅ Trade Inputs
     selected_stock = st.selectbox("Select stock to manually trade", stock_list)  
-    manual_price = st.number_input("Enter Buy Price (₹)", min_value=0.1, step=0.1, format="%.2f")  
-    investment_amount = st.number_input("Enter Amount to Invest (₹)", min_value=1.0, step=1.0, max_value=available_funds)
+    manual_price = st.number_input("Enter Price (₹)", min_value=0.1, step=0.1, format="%.2f")
 
-    if st.button("Execute Manual BUY"):  
-        if manual_price > 0 and investment_amount > 0:  
-            quantity = math.floor(investment_amount / manual_price)  
+    trade_type = st.radio("Choose Trade Type", ["BUY", "SELL"])
 
-            if quantity > 0:  
-                try:  
-                    # Check if investment is within available fund
-                    if investment_amount <= available_funds:
-                        # ✅ Place Buy Order
-                        place_order(selected_stock, "BUY", quantity)
+    if trade_type == "BUY":
+        if available_funds <= 0:
+            st.warning("⚠️ You have no available funds in your Angel One account.")
+            return
 
-                        # ✅ Log trade
-                        with open("trade_log.csv", "a") as log:  
-                            log.write(f"{datetime.now()},{selected_stock},BUY,{quantity},{manual_price},manual,manual\n")  
+        investment_amount = st.number_input("Enter Amount to Invest (₹)", min_value=1.0, step=1.0, max_value=available_funds)
+        if st.button("Execute Manual BUY"):
+            quantity = math.floor(investment_amount / manual_price)
+            if quantity > 0:
+                try:
+                    place_order(selected_stock, "BUY", quantity)
 
-                        # ✅ Send alert
-                        send_telegram_alert(selected_stock, "BUY", manual_price, take_profit, stop_loss)
+                    with open("trade_log.csv", "a") as log:
+                        log.write(f"{datetime.now()},{selected_stock},BUY,{quantity},{manual_price},manual,manual\n")
 
-                        st.success(f"✅ Manual BUY placed for {selected_stock} at ₹{manual_price:.2f} × {quantity} shares")  
-                    else:
-                        st.warning("⚠️ Insufficient funds to place the order.")
-                except Exception as e:  
-                    st.error(f"❌ Manual trade failed: {e}")  
-            else:  
-                st.warning("⚠️ Amount too low for given price. Quantity calculated as 0.")  
-        else:  
-            st.warning("⚠️ Please enter valid price and amount.")
+                    send_telegram_alert(selected_stock, "BUY", manual_price, take_profit, stop_loss)
+                    st.success(f"✅ BUY order placed: {selected_stock} at ₹{manual_price:.2f} × {quantity} shares")
+                except Exception as e:
+                    st.error(f"❌ BUY failed: {e}")
+            else:
+                st.warning("⚠️ Investment too low. Quantity = 0")
+
+    elif trade_type == "SELL":
+        sell_quantity = st.number_input("Enter Quantity to Sell", min_value=1, step=1)
+        if st.button("Execute Manual SELL"):
+            try:
+                place_order(selected_stock, "SELL", sell_quantity)
+
+                with open("trade_log.csv", "a") as log:
+                    log.write(f"{datetime.now()},{selected_stock},SELL,{sell_quantity},{manual_price},manual,manual\n")
+
+                send_telegram_alert(selected_stock, "SELL", manual_price, take_profit, stop_loss)
+                st.success(f"✅ SELL order placed: {selected_stock} at ₹{manual_price:.2f} × {sell_quantity} shares")
+            except Exception as e:
+                st.error(f"❌ SELL failed: {e}")
