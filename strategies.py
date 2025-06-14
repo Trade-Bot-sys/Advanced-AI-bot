@@ -9,7 +9,7 @@ import re
 from datetime import datetime
 
 # === Load AI Model and Scaler (Safely) ===
-MODEL_PATH = "ai_model/model.pkl"
+MODEL_PATH = "ai_model/advanced_model.pkl"
 SCALER_PATH = "ai_model/scaler.pkl"
 
 model = None
@@ -23,7 +23,7 @@ try:
             scaler = pickle.load(f)
         print("✅ AI model and scaler loaded.")
     else:
-        raise FileNotFoundError("model.pkl or scaler.pkl missing.")
+        raise FileNotFoundError("madvanced_odel.pkl or scaler.pkl missing.")
 except Exception as e:
     print(f"⚠️ AI model load failed: {e}. Using fallback strategies.")
 
