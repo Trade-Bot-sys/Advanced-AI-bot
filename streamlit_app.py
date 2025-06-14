@@ -10,6 +10,9 @@ import yfinance as yf
 import plotly.graph_objects as go
 from datetime import datetime
 import base64
+from your_module import decode_and_save_base64  # wherever you define the function
+decode_and_save_base64("ai_model/model.b64", "ai_model/model.pkl")
+decode_and_save_base64("ai_model/scalar.b64", "ai_model/scalar.pkl")
 def decode_and_save_base64(input_file, output_file):
     with open(input_file, "rb") as f:
         base64_data = f.read()
@@ -21,8 +24,8 @@ def decode_and_save_base64(input_file, output_file):
 if not os.path.exists("ai_model/model.pkl"):
     decode_and_save_base64("model.b64", "ai_model/model.pkl")
 
-if not os.path.exists("ai_model/scaler.pkl"):
-    decode_and_save_base64("scalar.b64", "ai_model/scaler.pkl")
+if not os.path.exists("ai_model/scalar.pkl"):
+    decode_and_save_base64("scalar.b64", "ai_model/scalar.pkl")
 
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
