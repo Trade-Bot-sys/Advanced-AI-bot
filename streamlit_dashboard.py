@@ -2,7 +2,10 @@ print("✅ Dashboard started")
 import os
 import json
 import pandas as pd
+#import streamlit as st
 import streamlit as st
+st.write("✅ Dashboard initialization started")
+print("✅ Dashboard initialization (stdout) started")
 import yfinance as yf
 import plotly.graph_objects as go
 from datetime import datetime
