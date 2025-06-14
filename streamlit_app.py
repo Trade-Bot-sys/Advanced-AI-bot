@@ -19,11 +19,11 @@ def decode_and_save_base64(input_file, output_file):
         f.write(decoded_data)
 
 # ✅ Decode models once
-if not os.path.exists("ai_model/model.pkl"):
-    decode_and_save_base64("ai_model/model.b64", "ai_model/model.pkl")
+#if not os.path.exists("ai_model/model.pkl"):
+    #decode_and_save_base64("ai_model/model.b64", "ai_model/model.pkl")
 
-if not os.path.exists("ai_model/scaler.pkl"):
-    decode_and_save_base64("ai_model/scaler.b64", "ai_model/scaler.pkl")
+if not os.path.exists("ai_model/advanced_model.pkl"):
+    #decode_and_save_base64("ai_model/scaler.b64", "ai_model/scaler.pkl")
 
 print("✅ Dashboard initialization complete")
 
