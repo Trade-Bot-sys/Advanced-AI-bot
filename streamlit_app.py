@@ -7,6 +7,7 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
 import base64
+import pickle
 from datetime import datetime
 
 # ✅ Define decode function first
@@ -18,12 +19,15 @@ def decode_and_save_base64(input_file, output_file):
     with open(output_file, "wb") as f:
         f.write(decoded_data)
 
-# ✅ Decode models once
-#if not os.path.exists("ai_model/model.pkl"):
-    #decode_and_save_base64("ai_model/model.b64", "ai_model/model.pkl")
-
-if not os.path.exists("ai_model/advanced_model.pkl"):
-    #decode_and_save_base64("ai_model/scaler.b64", "ai_model/scaler.pkl")
+# ✅ Load AI model
+MODEL_PATH = "ai_model/advanced_model.pkl"
+try:
+    with open(MODEL_PATH, "rb") as f:
+        ai_model = pickle.load(f)
+    print("✅ AI model loaded successfully")
+except Exception as e:
+    ai_model = None
+    print(f"❌ Failed to load AI model: {e}")
 
 print("✅ Dashboard initialization complete")
 
@@ -143,6 +147,16 @@ if selected_stock:
         with open("trade_log.csv", "a") as log:
             log.write(f"{datetime.now()},{selected_stock},SELL,{def_qty},{price},{def_tp},{def_sl}\n")
         st.success(f"✅ Manual SELL placed for {selected_stock} at ₹{price:.2f}")
+
+    # ✅ AI Model Prediction
+    if ai_model:
+        st.subheader("🤖 AI Model Prediction")
+        stock_data = yf.download(selected_stock, period="30d", interval="1d")
+        if not stock_data.empty:
+            # Dummy logic - replace with your actual preprocessing and model logic
+            features = stock_data[["Close"]].pct_change().dropna().tail(1).values
+            prediction = ai_model.predict(features)
+            st.info(f"📈 AI Model suggests: **{prediction[0]}** for {selected_stock}")
 
 # ✅ Auto Exit Based on AI
 for symbol, data in holdings.items():
