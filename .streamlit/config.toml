@@ -2,3 +2,5 @@
 headless = true
 port = 10000
 enableCORS = false
+enableXsrfProtection = false
+address = "0.0.0.0"
