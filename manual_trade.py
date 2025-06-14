@@ -1,22 +1,21 @@
 import streamlit as st  
-from executor import place_order, get_live_price  # Assuming 'place_order' and 'get_live_price' are correctly defined.
+from executor import place_order, get_live_price  
 from alerts import send_telegram_alert  
 from datetime import datetime  
 import math  
-from angelone_api import get_available_funds  # Import your function to get available funds from Angel One
+from angelone_api import get_available_funds  
 
 def manual_trade_ui(stock_list, take_profit=10, stop_loss=3):  
     st.subheader("📥 Manual Trade")
 
-    # Get available funds from Angel One
-    available_funds = get_available_funds()  # This should return the available funds (e.g., cash balance)
-
-    # Display available funds in the UI
+    # ✅ Get available funds from Angel One
+    available_funds = get_available_funds()
     st.sidebar.write(f"💰 Available Funds: ₹{available_funds:.2f}")
 
+    # ✅ Trade Inputs
     selected_stock = st.selectbox("Select stock to manually trade", stock_list)  
     manual_price = st.number_input("Enter Buy Price (₹)", min_value=0.1, step=0.1, format="%.2f")  
-    investment_amount = st.number_input("Enter Amount to Invest (₹)", min_value=1.0, step=1.0, max_value=available_funds)  
+    investment_amount = st.number_input("Enter Amount to Invest (₹)", min_value=1.0, step=1.0, max_value=available_funds)
 
     if st.button("Execute Manual BUY"):  
         if manual_price > 0 and investment_amount > 0:  
@@ -24,17 +23,17 @@ def manual_trade_ui(stock_list, take_profit=10, stop_loss=3):
 
             if quantity > 0:  
                 try:  
-                    # Check if there are sufficient funds to place the order
+                    # Check if investment is within available fund
                     if investment_amount <= available_funds:
-                        # Place order to buy stock
-                        place_order(selected_stock, "BUY", quantity)  
+                        # ✅ Place Buy Order
+                        place_order(selected_stock, "BUY", quantity)
 
-                        # Log trade details
+                        # ✅ Log trade
                         with open("trade_log.csv", "a") as log:  
                             log.write(f"{datetime.now()},{selected_stock},BUY,{quantity},{manual_price},manual,manual\n")  
 
-                        # Send Telegram alert
-                        send_telegram_alert(selected_stock, "BUY", manual_price, take_profit, stop_loss)  
+                        # ✅ Send alert
+                        send_telegram_alert(selected_stock, "BUY", manual_price, take_profit, stop_loss)
 
                         st.success(f"✅ Manual BUY placed for {selected_stock} at ₹{manual_price:.2f} × {quantity} shares")  
                     else:
