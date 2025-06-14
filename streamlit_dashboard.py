@@ -5,6 +5,15 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
 from datetime import datetime
+import base64
+def decode_and_save_base64(input_file, output_file):
+    with open(input_file, "rb") as f:
+        base64_data = f.read()
+    decoded_data = base64.b64decode(base64_data)
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, "wb") as f:
+        f.write(decoded_data)
+
 
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
