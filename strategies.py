@@ -8,19 +8,24 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 
-# === Load AI Model and Scaler Safely ===
+# === Load AI Model and Scaler (Safely) ===
 MODEL_PATH = "ai_model/model.pkl"
 SCALER_PATH = "ai_model/scaler.pkl"
 
-if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
-    raise FileNotFoundError("🔒 AI model or scaler missing. Please ensure model.pkl and scaler.pkl exist.")
+model = None
+scaler = None
 
-with open(MODEL_PATH, "rb") as f:
-    model = pickle.load(f)
-
-with open(SCALER_PATH, "rb") as f:
-    scaler = pickle.load(f)
-
+try:
+    if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+        with open(SCALER_PATH, "rb") as f:
+            scaler = pickle.load(f)
+        print("✅ AI model and scaler loaded.")
+    else:
+        raise FileNotFoundError("model.pkl or scaler.pkl missing.")
+except Exception as e:
+    print(f"⚠️ AI model load failed: {e}. Using fallback strategies.")
 
 # === RSI Computation ===
 def compute_rsi(series, period=14):
@@ -34,9 +39,11 @@ def compute_rsi(series, period=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-
 # === 1. AI Signal Strategy ===
 def get_ai_signal(symbol: str) -> str:
+    if not model or not scaler:
+        return "HOLD"  # Skip if model isn't loaded
+
     try:
         df = yf.download(symbol, period="90d", interval="1d")
         df.dropna(inplace=True)
@@ -61,7 +68,6 @@ def get_ai_signal(symbol: str) -> str:
         print(f"[AI Strategy] Error for {symbol}: {e}")
         return "HOLD"
 
-
 # === 2. RSI Signal Strategy ===
 def get_rsi_signal(symbol: str) -> str:
     try:
@@ -82,7 +88,6 @@ def get_rsi_signal(symbol: str) -> str:
         print(f"[RSI Strategy] Error for {symbol}: {e}")
         return "HOLD"
 
-
 # === 3. News Sentiment Score ===
 def get_sentiment_score(symbol: str) -> int:
     try:
@@ -101,7 +106,6 @@ def get_sentiment_score(symbol: str) -> int:
     except Exception as e:
         print(f"[News Sentiment] Error for {symbol}: {e}")
         return 0
-
 
 # === 4. Multi-Strategy Signal Aggregator ===
 def get_final_signal(symbol: str, sentiment_threshold_buy=4, sentiment_threshold_sell=2) -> str:
@@ -140,12 +144,10 @@ def get_final_signal(symbol: str, sentiment_threshold_buy=4, sentiment_threshold
         print(f"[Final Signal] Error for {symbol}: {e}")
         return "HOLD"
 
-
-# === 5. Exit Logic with TP, SL, Trailing SL and Max Hold Days ===
+# === 5. Exit Logic ===
 def should_exit_trade(symbol: str, entry_price: float, buy_time: datetime,
                       tp: float, sl: float, trailing_buffer: float = 2.5, max_days: int = 3) -> bool:
     try:
-        # Live price
         df_now = yf.download(symbol, period="1d", interval="1m")
         if df_now.empty or "Close" not in df_now.columns:
             raise ValueError("No intraday data available")
@@ -154,14 +156,12 @@ def should_exit_trade(symbol: str, entry_price: float, buy_time: datetime,
         days_held = (datetime.now() - buy_time).days
         profit = current_price - entry_price
 
-        # Trailing Stop Loss logic
         df_hist = yf.download(symbol, period="5d", interval="1m")
         peak_price = df_hist["Close"].max() if not df_hist.empty else current_price
 
         if profit > 0 and current_price < (peak_price - trailing_buffer):
             print(f"🔽 Trailing SL triggered for {symbol}")
             return True
-
         if profit >= tp:
             print(f"🎯 Take Profit hit for {symbol}")
             return True
