@@ -11,18 +11,6 @@ from datetime import datetime
 import base64
 import os
 
-def decode_and_save_base64(input_file, output_file):
-    with open(input_file, "rb") as f:
-        base64_data = f.read()
-    decoded_data = base64.b64decode(base64_data)
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, "wb") as f:
-        f.write(decoded_data)
-
-# Decode and save
-decode_and_save_base64("model.b64", "ai_model/model.pkl")
-decode_and_save_base64("scaler.b64", "ai_model/scaler.pkl")
-
 # === Load trained model ===
 with open("ai_model/model.pkl", "rb") as f:
     model = pickle.load(f)
