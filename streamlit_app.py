@@ -118,7 +118,7 @@ if bot_stock:
     st.plotly_chart(fig, use_container_width=True)
 
 # ✅ Manual Trading Panel (via helper)
-manual_trade_ui(STOCK_LIST, def_tp, def_sl, def_qty)
+manual_trade_ui(STOCK_LIST, def_tp, def_sl)
 
 # ✅ Auto Exit Based on AI/SL/TP
 for symbol, data in holdings.copy().items():
