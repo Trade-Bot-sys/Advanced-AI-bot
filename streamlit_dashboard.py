@@ -13,7 +13,12 @@ def decode_and_save_base64(input_file, output_file):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "wb") as f:
         f.write(decoded_data)
+# 🔁 Decode model files if needed
+if not os.path.exists("ai_model/model.pkl"):
+    decode_and_save_base64("model.b64", "ai_model/model.pkl")
 
+if not os.path.exists("ai_model/scaler.pkl"):
+    decode_and_save_base64("scalar.b64", "ai_model/scaler.pkl")
 
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
