@@ -1,34 +1,21 @@
-# Core Dashboard & Data
 streamlit
-pandas
 yfinance
+pandas
 requests
 plotly
-numpy
-pytz
-
-# Scheduling & Time
+websocket-client
 schedule
 apscheduler
 python-dotenv
-
-# Web, Telegram, Email
+pyotp
+pytz
 flask
-python-telegram-bot==13.15  # stable with legacy syntax
-email-validator
+numpy
+scikit-learn
 beautifulsoup4
 lxml
-
-# Angel One API & WebSocket
-websocket-client
-pyotp
-
-# AI Models & Strategies
-scikit-learn
+python-telegram-bot
 xgboost
-prophet            # optional: time series forecast model (Facebook Prophet)
-
-# Charts, Plots & Visuals
+prophet
 matplotlib
-#seaborn
-websocket
+seaborn
