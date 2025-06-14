@@ -31,7 +31,7 @@ except Exception as e:
 
 print("✅ Dashboard initialization complete")
 
-# ✅ Now import custom modules
+# ✅ Import modules
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
 from strategies import get_final_signal, should_exit_trade
@@ -39,36 +39,39 @@ from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
 
-# Under your main layout
-
+# ✅ Streamlit setup
 print("✅ App started")
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
 
 st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
 
+# ✅ Load credentials
 with open("access_token.json") as f:
     token_data = json.load(f)
 API_KEY = token_data["api_key"]
 JWT_TOKEN = token_data["access_token"]
 
+# ✅ Load stock list
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
     STOCK_LIST = [f"{s.strip()}.NS" for s in df_stocks["Symbol"] if isinstance(s, str)]
 except:
     STOCK_LIST = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS"]
 
+# ✅ Sidebar settings
 st.sidebar.header("⚙️ Trade Settings")
 def_tp = st.sidebar.number_input("Take Profit (₹)", value=10.0)
 def_sl = st.sidebar.number_input("Stop Loss (₹)", value=5.0)
 def_qty = st.sidebar.number_input("Quantity", value=1)
 
+# ✅ Load trade history
 if os.path.exists("trade_log.csv"):
     df_trades = pd.read_csv("trade_log.csv", names=["timestamp", "symbol", "action", "qty", "entry", "tp", "sl"])
 else:
     df_trades = pd.DataFrame(columns=["timestamp", "symbol", "action", "qty", "entry", "tp", "sl"])
 
-# ✅ Live Portfolio Panel
+# ✅ Portfolio Panel
 st.sidebar.header("📊 Holdings Portfolio")
 holdings = load_holdings()
 
@@ -113,58 +116,12 @@ if bot_stock:
         ))
 
     st.plotly_chart(fig, use_container_width=True)
-  
-manual_trade_ui(STOCK_LIST, TAKE_PROFIT, STOP_LOSS)
-# ✅ Manual Trade Panel
-st.sidebar.header("🧾 Manual Trading Panel")
-selected_stock = st.sidebar.selectbox("Select Stock", STOCK_LIST)
 
-if selected_stock:
-    st.subheader(f"📉 Live Chart: {selected_stock}")
-    chart_df = yf.download(selected_stock, period="5d", interval="5m")
-    fig = go.Figure()
-    fig.add_trace(go.Candlestick(
-        x=chart_df.index, open=chart_df["Open"],
-        high=chart_df["High"], low=chart_df["Low"],
-        close=chart_df["Close"], name="Candles"))
-    st.plotly_chart(fig, use_container_width=True)
+# ✅ Manual Trading Panel (via helper)
+manual_trade_ui(STOCK_LIST, def_tp, def_sl, def_qty)
 
-    if st.button("📥 Manual Buy"):
-        price = get_live_price(selected_stock)
-        place_order(selected_stock, "BUY", def_qty)
-        send_telegram_alert(selected_stock, "BUY", price, def_tp, def_sl)
-        holdings[selected_stock] = {
-            "entry": price,
-            "qty": def_qty,
-            "buy_time": datetime.now().isoformat()
-        }
-        save_holdings(holdings)
-        with open("trade_log.csv", "a") as log:
-            log.write(f"{datetime.now()},{selected_stock},BUY,{def_qty},{price},{def_tp},{def_sl}\n")
-        st.success(f"✅ Manual BUY placed for {selected_stock} at ₹{price:.2f}")
-
-    if st.button("📤 Manual Sell"):
-        price = get_live_price(selected_stock)
-        place_order(selected_stock, "SELL", def_qty)
-        send_telegram_alert(selected_stock, "SELL", price, def_tp, def_sl)
-        holdings.pop(selected_stock, None)
-        save_holdings(holdings)
-        with open("trade_log.csv", "a") as log:
-            log.write(f"{datetime.now()},{selected_stock},SELL,{def_qty},{price},{def_tp},{def_sl}\n")
-        st.success(f"✅ Manual SELL placed for {selected_stock} at ₹{price:.2f}")
-
-    # ✅ AI Model Prediction
-    if ai_model:
-        st.subheader("🤖 AI Model Prediction")
-        stock_data = yf.download(selected_stock, period="30d", interval="1d")
-        if not stock_data.empty:
-            # Dummy logic - replace with your actual preprocessing and model logic
-            features = stock_data[["Close"]].pct_change().dropna().tail(1).values
-            prediction = ai_model.predict(features)
-            st.info(f"📈 AI Model suggests: **{prediction[0]}** for {selected_stock}")
-
-# ✅ Auto Exit Based on AI
-for symbol, data in holdings.items():
+# ✅ Auto Exit Based on AI/SL/TP
+for symbol, data in holdings.copy().items():
     entry = data["entry"]
     qty = data["qty"]
     buy_time = datetime.fromisoformat(data["buy_time"])
@@ -196,13 +153,13 @@ if st.button("Run Backtest"):
     else:
         st.error("❌ Failed to run backtest on selected stock.")
 
-# ✅ Daily Scheduler
-schedule_daily_trade()
-
-# ✅ Manual Email Trigger
+# ✅ Manual Trigger for Summary Email
 if st.button("📩 Send Daily Trade Summary"):
     send_trade_summary_email()
     st.success("✅ Daily summary email sent.")
+
+# ✅ Daily Scheduler Trigger
+schedule_daily_trade()
 
 # ✅ Done
 st.success("✅ Smart AI Dashboard with Angel One, AI logic, auto trading, portfolio panel, and backtest support.")
