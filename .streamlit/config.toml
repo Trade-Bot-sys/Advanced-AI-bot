@@ -1,4 +1,4 @@
 [server]
 headless = true
-port = $PORT
+port = 10000
 enableCORS = false
