@@ -22,7 +22,12 @@ if not os.path.exists("ai_model/scaler.pkl"):
 
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
-from strategies import get_final_signal, should_exit_trade
+#from strategies import get_final_signal, should_exit_trade
+try:
+    from strategies import get_final_signal, should_exit_trade
+except Exception as e:
+    print(f"❌ Error importing strategies: {e}")
+    
 from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 print("✅ App started")
