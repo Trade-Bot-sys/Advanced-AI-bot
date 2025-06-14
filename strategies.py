@@ -8,31 +8,28 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 
-# === Load AI Model and Scaler (Safely) ===
+# === Load AI Model (Without Scaler) ===
 MODEL_PATH = "ai_model/advanced_model.pkl"
-SCALER_PATH = "ai_model/scaler.pkl"
 
 model = None
-scaler = None
+ai_enabled = False
 
 try:
-    if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
+    if os.path.exists(MODEL_PATH):
         with open(MODEL_PATH, "rb") as f:
             model = pickle.load(f)
-        with open(SCALER_PATH, "rb") as f:
-            scaler = pickle.load(f)
-        print("✅ AI model and scaler loaded.")
+        ai_enabled = True
+        print("✅ AI model loaded.")
     else:
-        raise FileNotFoundError("madvanced_odel.pkl or scaler.pkl missing.")
+        raise FileNotFoundError("advanced_model.pkl not found.")
 except Exception as e:
-    print(f"⚠️ AI model load failed: {e}. Using fallback strategies.")
+    print(f"⚠️ AI model load failed: {e}. Fallback to rule-based strategies.")
 
 # === RSI Computation ===
 def compute_rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
-
     avg_gain = gain.rolling(window=period).mean()
     avg_loss = loss.rolling(window=period).mean()
     rs = avg_gain / avg_loss
@@ -41,8 +38,9 @@ def compute_rsi(series, period=14):
 
 # === 1. AI Signal Strategy ===
 def get_ai_signal(symbol: str) -> str:
-    if not model or not scaler:
-        return "HOLD"  # Skip if model isn't loaded
+    if not ai_enabled or model is None:
+        print(f"[AI] {symbol}: Model not loaded. Skipping AI strategy.")
+        return "HOLD"
 
     try:
         df = yf.download(symbol, period="90d", interval="1d")
@@ -52,13 +50,12 @@ def get_ai_signal(symbol: str) -> str:
         df["MA10"] = df["Close"].rolling(window=10).mean()
         df["MA20"] = df["Close"].rolling(window=20).mean()
         df["RSI"] = compute_rsi(df["Close"], 14)
-        df["Target"] = np.where(df["Return"].shift(-1) > 0, 1, 0)
-
-        features = ["MA10", "MA20", "RSI"]
         df.dropna(inplace=True)
 
+        features = ["MA10", "MA20", "RSI"]
         X = df[features]
-        latest = scaler.transform([X.iloc[-1]])
+
+        latest = X.iloc[-1].values.reshape(1, -1)
         prediction = model.predict(latest)[0]
         prob = model.predict_proba(latest)[0][1]
 
