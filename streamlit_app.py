@@ -1,18 +1,15 @@
 print("✅ Dashboard started")
+
 import os
 import json
 import pandas as pd
-#import streamlit as st
 import streamlit as st
-st.write("✅ Dashboard initialization started")
-print("✅ Dashboard initialization (stdout) started")
 import yfinance as yf
 import plotly.graph_objects as go
-from datetime import datetime
 import base64
-from your_module import decode_and_save_base64  # wherever you define the function
-decode_and_save_base64("ai_model/model.b64", "ai_model/model.pkl")
-decode_and_save_base64("ai_model/scalar.b64", "ai_model/scalar.pkl")
+from datetime import datetime
+
+# ✅ Define decode function first
 def decode_and_save_base64(input_file, output_file):
     with open(input_file, "rb") as f:
         base64_data = f.read()
@@ -20,21 +17,20 @@ def decode_and_save_base64(input_file, output_file):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "wb") as f:
         f.write(decoded_data)
-# 🔁 Decode model files if needed
+
+# ✅ Decode models once
 if not os.path.exists("ai_model/model.pkl"):
-    decode_and_save_base64("model.b64", "ai_model/model.pkl")
+    decode_and_save_base64("ai_model/model.b64", "ai_model/model.pkl")
 
-if not os.path.exists("ai_model/scalar.pkl"):
-    decode_and_save_base64("scalar.b64", "ai_model/scalar.pkl")
+if not os.path.exists("ai_model/scaler.pkl"):
+    decode_and_save_base64("ai_model/scaler.b64", "ai_model/scaler.pkl")
 
+print("✅ Dashboard initialization complete")
+
+# ✅ Now import custom modules
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
-#from strategies import get_final_signal, should_exit_trade
-try:
-    from strategies import get_final_signal, should_exit_trade
-except Exception as e:
-    print(f"❌ Error importing strategies: {e}")
-    
+from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 print("✅ App started")
