@@ -12,7 +12,7 @@ from datetime import datetime
 import requests
 
 # 🔐 Replace this with your actual Gist Raw URL (make sure it's a RAW URL!)
-GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac"
+GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 
 def fetch_access_token_from_gist(gist_url):
     try:
