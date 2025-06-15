@@ -75,8 +75,6 @@ st.title("📈 Smart AI Trading Dashboard - Angel One")
 st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
 # 💰 Show available funds
 
-st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
-
 # ✅ Load credentials
 # ✅ Load credentials directly from fetched Gist data
 API_KEY = tokens.get("api_key")
@@ -102,8 +100,9 @@ def get_available_funds():
         payload = {
             "clientcode": CLIENT_CODE
         }
-        response = requests.post("https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
-                                 json=payload, headers=headers)
+        response = requests.post(
+            "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
+            json=payload, headers=headers)
         data = response.json()
 
         if response.status_code == 200 and "data" in data:
@@ -114,6 +113,8 @@ def get_available_funds():
     except Exception as e:
         st.error(f"❌ Exception fetching funds: {e}")
         return 0.0
+
+# ✅ NOW call the function and use it
 available_funds = get_available_funds()
 st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
 # ✅ Load stock list
