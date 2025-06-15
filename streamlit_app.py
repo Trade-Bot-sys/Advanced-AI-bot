@@ -103,9 +103,9 @@ st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
 API_KEY = tokens.get("api_key")
 JWT_TOKEN = tokens.get("access_token")
 CLIENT_CODE = tokens.get("client_code")
-LOCAL_IP = os.getenv("CLIENT_LOCAL_IP")
-PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP")
-MAC_ADDRESS = os.getenv("MAC_ADDRESS")
+LOCAL_IP = os.getenv('CLIENT_LOCAL_IP')
+PUBLIC_IP = os.getenv('CLIENT_PUBLIC_IP')
+MAC_ADDRESS = os.getenv('MAC_ADDRESS')
 
 def get_available_funds():
     try:
