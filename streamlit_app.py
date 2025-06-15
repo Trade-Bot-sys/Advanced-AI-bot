@@ -197,7 +197,7 @@ if bot_stock:
 
     st.plotly_chart(fig, use_container_width=True)
 
-manual_trade_ui(STOCK_LIST, def_tp, def_sl)
+manual_trade_ui(STOCK_LIST, def_tp, def_sl, available_funds)
 
 for symbol, data in holdings.copy().items():
     entry = data["entry"]
