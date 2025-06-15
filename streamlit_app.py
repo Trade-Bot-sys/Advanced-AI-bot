@@ -14,12 +14,12 @@ st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 
 from generate_access_token import generate_token
 from alerts import send_telegram_alert, send_trade_summary_email
-from executor import place_order, get_live_price
+#from executor import place_order, get_live_price
 from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
-
+from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 print("✅ Dashboard started")
 
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
