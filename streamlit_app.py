@@ -82,9 +82,9 @@ JWT_TOKEN = tokens.get("access_token")
 CLIENT_CODE = tokens.get("client_code")
 
 # ✅ Angel One RMS Funds API Integration
-LOCAL_IP = os.getenv("CLIENT_LOCAL_IP", "127.0.0.1")
-PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP", "127.0.0.1")
-MAC_ADDRESS = os.getenv("MAC_ADDRESS", "00:00:00:00:00:00")
+LOCAL_IP = os.getenv("CLIENT_LOCAL_IP")
+PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP")
+MAC_ADDRESS = os.getenv("MAC_ADDRESS")
 def get_available_funds():
     try:
         headers = {
@@ -99,9 +99,19 @@ def get_available_funds():
         payload = {
             "clientcode": CLIENT_CODE
         }
+
+        # ✅ Print debug info
+        print("🔐 JWT_TOKEN:", JWT_TOKEN)
+        print("📦 Payload:", payload)
+        print("📨 Headers:", headers)
+
         response = requests.post(
             "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
             json=payload, headers=headers)
+
+        print("📬 Status Code:", response.status_code)
+        print("📨 Raw Response:", response.text)
+
         data = response.json()
 
         if response.status_code == 200 and "data" in data:
