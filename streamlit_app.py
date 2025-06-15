@@ -10,6 +10,27 @@ import base64
 import pickle
 from datetime import datetime
 
+import firebase_admin
+from firebase_admin import credentials, storage
+import os
+
+def download_token_from_firebase():
+    # Initialize Firebase only once
+    if not firebase_admin._apps:
+        cred = credentials.Certificate("secrets/firebase-adminsdk.json")
+        firebase_admin.initialize_app(cred, {
+            'storageBucket': 'your-project-id.appspot.com'  # ← replace with your actual bucket
+        })
+
+    # Download access_token.json from Firebase
+    bucket = storage.bucket()
+    blob = bucket.blob("access_token.json")
+    blob.download_to_filename("access_token.json")
+    print("✅ access_token.json downloaded from Firebase")
+
+# 🔁 Call this before using the token anywhere
+download_token_from_firebase()
+
 # ✅ Define decode function first
 def decode_and_save_base64(input_file, output_file):
     with open(input_file, "rb") as f:
