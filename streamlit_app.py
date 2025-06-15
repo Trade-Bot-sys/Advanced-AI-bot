@@ -109,40 +109,30 @@ MAC_ADDRESS = "AA:BB:CC:DD:EE:FF"
 
 def get_available_funds():
     try:
+        conn = http.client.HTTPSConnection("apiconnect.angelone.in")
         headers = {
-            "Authorization": f"Bearer {JWT_TOKEN}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "X-ClientLocalIP": LOCAL_IP or "192.168.1.1",
-            "X-ClientPublicIP": PUBLIC_IP or "122.168.1.1",
-            "X-MACAddress": MAC_ADDRESS or "00:00:5e:00:53:af",
-            "X-PrivateKey": API_KEY
+            'Authorization': f"Bearer {os.getenv('AUTHORIZATION_TOKEN')}",
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-UserType': 'USER',
+            'X-SourceID': 'WEB',
+            'X-ClientLocalIP': os.getenv('CLIENT_LOCAL_IP'),
+            'X-ClientPublicIP': os.getenv('CLIENT_PUBLIC_IP'),
+            'X-MACAddress': os.getenv('MAC_ADDRESS'),
+            'X-PrivateKey': os.getenv('API_KEY')
         }
-
-        payload = {
-            "clientcode": CLIENT_CODE
-        }
-
-        response = requests.post(
-            "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
-            json=payload, headers=headers)
-
-        print("🔍 RMS Raw Response:", response.text)  # ADD THIS
-        print("🔍 Status Code:", response.status_code)
-
-        data = response.json()  # this line fails if response is not JSON
-
-        if response.status_code == 200 and "data" in data:
-            return float(data["data"].get("availablecash", 0.0))
-        else:
-            st.warning(f"⚠️ Could not fetch funds. Response: {data}")
-            return 0.0
+        conn.request("GET", "/rest/secure/angelbroking/user/v1/getRMS", headers=headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(data.decode("utf-8"))
     except Exception as e:
-        st.error(f"❌ Exception fetching funds: {e}")
-        return 0.0
+        return {"status": False, "error": str(e)}
 
-available_funds = get_available_funds()
-st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
+funds = get_available_funds()
+if funds.get("status"):
+    st.metric("💰 Available Cash", f"₹ {funds['data']['availablecash']}")
+else:
+    st.error(f"Failed to fetch funds: {funds.get('error')}")
 
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
