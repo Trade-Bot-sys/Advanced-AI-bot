@@ -74,7 +74,7 @@ st.title("📈 Smart AI Trading Dashboard - Angel One")
 
 st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
 # 💰 Show available funds
-available_funds = get_available_funds()
+
 st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
 
 # ✅ Load credentials
@@ -87,7 +87,7 @@ CLIENT_CODE = tokens.get("client_code")
 LOCAL_IP = os.getenv("CLIENT_LOCAL_IP", "127.0.0.1")
 PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP", "127.0.0.1")
 MAC_ADDRESS = os.getenv("MAC_ADDRESS", "00:00:00:00:00:00")
-
+available_funds = get_available_funds()
 def get_available_funds():
     try:
         headers = {
@@ -114,7 +114,8 @@ def get_available_funds():
     except Exception as e:
         st.error(f"❌ Exception fetching funds: {e}")
         return 0.0
-
+available_funds = get_available_funds()
+st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
 # ✅ Load stock list
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
