@@ -1,5 +1,3 @@
-print("✅ Dashboard started")
-
 import os
 import json
 import pandas as pd
@@ -11,6 +9,7 @@ import pickle
 from datetime import datetime
 import requests
 
+# ✅ This must be the first Streamlit command
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 
 from generate_access_token import generate_token
@@ -21,14 +20,15 @@ from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
 
+print("✅ Dashboard started")
+
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 
 def fetch_access_token_from_gist(gist_url):
     try:
         response = requests.get(gist_url)
         if response.status_code == 200:
-            token_data = response.json()
-            return token_data
+            return response.json()
         else:
             st.error("❌ Failed to fetch access_token.json from Gist")
             return None
@@ -95,11 +95,9 @@ except Exception as e:
     print(f"❌ Failed to load AI model: {e}")
 
 print("✅ Dashboard initialization complete")
-
 print("✅ App started")
-st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
-st.title("📈 Smart AI Trading Dashboard - Angel One")
 
+st.title("📈 Smart AI Trading Dashboard - Angel One")
 st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
 
 API_KEY = tokens.get("api_key")
