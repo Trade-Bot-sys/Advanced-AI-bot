@@ -139,4 +139,4 @@ def run_scheduler():
 # ---------- Entry Point ----------
 if __name__ == "__main__":
     generate_token()         # ✅ Run once immediately
-    # run_scheduler()        # 🔁 Uncomment to run daily
+     run_scheduler()        # 🔁 Uncomment to run daily
