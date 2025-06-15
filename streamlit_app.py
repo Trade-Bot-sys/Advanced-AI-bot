@@ -10,9 +10,54 @@ import base64
 import pickle
 from datetime import datetime
 import requests
-
+from generate_access_token import generate_token  # ✅ import function
 # 🔐 Replace this with your actual Gist Raw URL (make sure it's a RAW URL!)
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
+
+# 📥 Load tokens at the start of the app
+def is_token_fresh():
+    try:
+        file_path = "access_token.json"
+        if not os.path.exists(file_path):
+            return False
+        token_time = datetime.fromtimestamp(os.path.getmtime(file_path)).date()
+        return token_time == datetime.now().date()
+    except:
+        return False
+
+# 📥 Step 1: Fetch token from Gist
+tokens = fetch_access_token_from_gist(GIST_RAW_URL)
+
+# 📥 Step 2: Save to local for freshness check
+if tokens:
+    with open("access_token.json", "w") as f:
+        json.dump(tokens, f, indent=2)
+
+# 📥 Step 3: If token is missing or stale, regenerate
+if not tokens or not is_token_fresh():
+    st.warning("⚠️ Token not fresh. Regenerating...")
+    generate_token()
+    # Re-fetch after regeneration
+    tokens = fetch_access_token_from_gist(GIST_RAW_URL)
+    if tokens:
+        with open("access_token.json", "w") as f:
+            json.dump(tokens, f, indent=2)
+    else:
+        st.error("❌ Failed to fetch token even after regeneration.")
+        st.stop()
+try:
+    token_time = datetime.fromtimestamp(os.path.getmtime("access_token.json"))
+    st.sidebar.markdown(f"📅 Token refreshed: **{token_time.strftime('%Y-%m-%d %H:%M:%S')}**")
+except:
+    st.sidebar.warning("⚠️ Token timestamp not available.")
+    
+if tokens:
+    access_token = tokens.get("access_token")
+    feed_token = tokens.get("feed_token")
+    api_key = tokens.get("api_key")
+    client_code = tokens.get("client_code")
+else:
+    st.stop()
 
 def fetch_access_token_from_gist(gist_url):
     try:
@@ -26,18 +71,7 @@ def fetch_access_token_from_gist(gist_url):
     except Exception as e:
         st.error(f"❌ Error fetching access_token.json: {e}")
         return None
-
-# 📥 Load tokens at the start of the app
-tokens = fetch_access_token_from_gist(GIST_RAW_URL)
-
-if tokens:
-    access_token = tokens.get("access_token")
-    feed_token = tokens.get("feed_token")
-    api_key = tokens.get("api_key")
-    client_code = tokens.get("client_code")
-else:
-    st.stop()
-
+        
 # ✅ Define decode function first
 def decode_and_save_base64(input_file, output_file):
     with open(input_file, "rb") as f:
@@ -172,7 +206,7 @@ bot_stock = st.sidebar.selectbox("View Traded Stock", bot_symbols)
 
 if bot_stock:
     st.subheader(f"📊 Live Chart: {bot_stock}")
-    chart_df = yf.download(bot_stock, period="5d", interval="5m")
+    chart_df = load_stock_chart(bot_stock)
     fig = go.Figure()
 
     fig.add_trace(go.Candlestick(
