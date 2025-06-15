@@ -130,8 +130,8 @@ def generate_token():
 
 # ---------- Optional Scheduler ----------
 def run_scheduler():
-    print(f"[{datetime.now()}] 🕒 Scheduler started (09:10 AM IST daily)")
-    schedule.every().day.at("09:10").do(generate_token)
+    print(f"[{datetime.now()}] 🕒 Scheduler started (08:50 AM IST daily)")
+    schedule.every().day.at("08:50").do(generate_token)
     while True:
         schedule.run_pending()
         time.sleep(60)
@@ -139,4 +139,4 @@ def run_scheduler():
 # ---------- Entry Point ----------
 if __name__ == "__main__":
     generate_token()         # ✅ Run once immediately
-     run_scheduler()        # 🔁 Uncomment to run daily
+    run_scheduler()        # 🔁 Uncomment to run daily
