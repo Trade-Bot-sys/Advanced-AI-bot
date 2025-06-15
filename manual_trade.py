@@ -5,13 +5,10 @@ from datetime import datetime
 import math  
 #from angelone_api import get_available_funds  
 
-def manual_trade_ui(stock_list, take_profit=10, stop_loss=3):  
+def manual_trade_ui(stock_list, take_profit=10, stop_loss=3, available_funds=0):
     st.subheader("📥 Manual Trade")
-
-    # ✅ Get available funds
-    available_funds = get_available_funds()
     st.sidebar.write(f"💰 Available Funds: ₹{available_funds:.2f}")
-
+    
     selected_stock = st.selectbox("Select stock to manually trade", stock_list)  
     manual_price = st.number_input("Enter Price (₹)", min_value=0.1, step=0.1, format="%.2f")
 
