@@ -6,6 +6,7 @@ import yfinance as yf
 import plotly.graph_objects as go
 import base64
 import pickle
+import http.client
 from datetime import datetime
 import requests
 
@@ -130,8 +131,10 @@ def get_available_funds():
 
 funds = get_available_funds()
 if funds.get("status"):
-    st.metric("💰 Available Cash", f"₹ {funds['data']['availablecash']}")
+    available_funds = float(funds['data']['availablecash'])
+    st.metric("💰 Available Cash", f"₹ {available_funds}")
 else:
+    available_funds = 0
     st.error(f"Failed to fetch funds: {funds.get('error')}")
 
 try:
