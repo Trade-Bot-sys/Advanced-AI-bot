@@ -14,7 +14,7 @@ st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 
 from generate_access_token import generate_token
 from alerts import send_telegram_alert, send_trade_summary_email
-#from executor import place_order, get_live_price
+from executor import place_order, get_live_price
 from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
