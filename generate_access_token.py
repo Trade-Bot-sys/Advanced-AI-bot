@@ -6,29 +6,31 @@ import schedule
 import time
 from datetime import datetime
 import pytz
-import firebase_admin
-from firebase_admin import credentials, storage
+import requests
 
-# ---------- Firebase Setup ----------
-def init_firebase():
+# ---------- Gist Uploader ----------
+def update_gist_token(gist_id, github_token, new_content):
     try:
-        if not firebase_admin._apps:
-            cred = credentials.Certificate("secrets/firebase-adminsdk.json")  # 🔁 adjust path if needed
-            firebase_admin.initialize_app(cred, {
-                'storageBucket': 'your-project-id.appspot.com'  # 🔁 replace with your bucket
-            })
-    except Exception as e:
-        print(f"❌ Firebase init error: {e}")
+        url = f"https://api.github.com/gists/{gist_id}"
+        headers = {
+            "Authorization": f"token {github_token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        payload = {
+            "files": {
+                "access_token.json": {
+                    "content": new_content
+                }
+            }
+        }
 
-def upload_to_firebase():
-    try:
-        init_firebase()
-        bucket = storage.bucket()
-        blob = bucket.blob("access_token.json")
-        blob.upload_from_filename("access_token.json")
-        print("✅ Uploaded access_token.json to Firebase")
+        response = requests.patch(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            print("✅ Gist updated successfully.")
+        else:
+            print(f"❌ Failed to update Gist: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"❌ Firebase upload failed: {e}")
+        print(f"❌ Exception while updating Gist: {e}")
 
 # ---------- Token Generator ----------
 def generate_token():
@@ -46,6 +48,8 @@ def generate_token():
         local_ip = os.getenv('CLIENT_LOCAL_IP')
         public_ip = os.getenv('CLIENT_PUBLIC_IP')
         mac_address = os.getenv('MAC_ADDRESS')
+        gist_id = os.getenv('GIST_ID')
+        github_token = os.getenv('GITHUB_TOKEN')
 
         required_keys = {
             'CLIENT_CODE': client_code_env,
@@ -54,7 +58,9 @@ def generate_token():
             'API_KEY': apikey,
             'CLIENT_LOCAL_IP': local_ip,
             'CLIENT_PUBLIC_IP': public_ip,
-            'MAC_ADDRESS': mac_address
+            'MAC_ADDRESS': mac_address,
+            'GIST_ID': gist_id,
+            'GITHUB_TOKEN': github_token
         }
 
         missing_keys = [k for k, v in required_keys.items() if not v]
@@ -103,6 +109,7 @@ def generate_token():
             print("❌ Missing tokens in response.")
             return
 
+        # ✅ Save to local file
         with open("access_token.json", "w") as f:
             json.dump({
                 "feed_token": feed_token,
@@ -113,8 +120,10 @@ def generate_token():
 
         print(f"[{datetime.now()}] ✅ access_token.json saved.")
 
-        # 🔁 Upload to Firebase
-        upload_to_firebase()
+        # ✅ Upload to GitHub Gist
+        with open("access_token.json", "r") as f:
+            new_content = f.read()
+        update_gist_token(gist_id, github_token, new_content)
 
     except Exception as e:
         print(f"❌ Exception in generate_token(): {e}")
