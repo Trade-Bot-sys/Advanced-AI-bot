@@ -10,6 +10,9 @@ import base64
 import pickle
 from datetime import datetime
 import requests
+
+st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
+
 from generate_access_token import generate_token
 from alerts import send_telegram_alert, send_trade_summary_email
 from executor import place_order, get_live_price
