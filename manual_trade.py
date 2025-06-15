@@ -3,7 +3,7 @@ from executor import place_order, get_live_price
 from alerts import send_telegram_alert  
 from datetime import datetime  
 import math  
-from angelone_api import get_available_funds  
+#from angelone_api import get_available_funds  
 
 def manual_trade_ui(stock_list, take_profit=10, stop_loss=3):  
     st.subheader("📥 Manual Trade")
