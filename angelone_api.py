@@ -1,42 +1,44 @@
 # angelone_api.py
 import requests
 import json
+import os
 
 def load_auth_data():
     try:
         with open("access_token.json", "r") as f:
             data = json.load(f)
-            return data["access_token"], data["api_key"]
+            return data["access_token"], data["api_key"], data["client_code"]
     except Exception as e:
         print(f"❌ Failed to load access_token.json: {e}")
-        return None, None
+        return None, None, None
 
 def get_available_funds():
     try:
-        # Load token and client code from access_token.json
-        with open("access_token.json") as f:
-            token_data = json.load(f)
+        access_token, api_key, client_code = load_auth_data()
+        if not all([access_token, api_key, client_code]):
+            print("❌ Missing required credentials.")
+            return 0.0
 
-        access_token = token_data["access_token"]
-        client_code = token_data["client_code"]
+        # Load device and IP details from Render ENV
+        local_ip = os.getenv("CLIENT_LOCAL_IP", "127.0.0.1")
+        public_ip = os.getenv("CLIENT_PUBLIC_IP", "127.0.0.1")
+        mac_address = os.getenv("MAC_ADDRESS", "00:00:00:00:00:00")
 
-        # Headers for Angel One SmartAPI
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "X-ClientLocalIP": "127.0.0.1",
-            "X-ClientPublicIP": "127.0.0.1",
-            "X-MACAddress": "00:00:00:00:00:00",
-            "X-PrivateKey": "YOUR_API_KEY_HERE"  # 🔁 Replace this with your actual Angel One API key
+            "X-ClientLocalIP": local_ip,
+            "X-ClientPublicIP": public_ip,
+            "X-MACAddress": mac_address,
+            "X-PrivateKey": api_key
         }
-
-        url = "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS"
 
         payload = {
             "clientcode": client_code
         }
 
+        url = "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS"
         response = requests.post(url, json=payload, headers=headers)
         data = response.json()
 
@@ -44,9 +46,9 @@ def get_available_funds():
             available_cash = float(data["data"].get("availablecash", 0.0))
             return available_cash
         else:
-            print("⚠️ Invalid response:", data)
+            print("⚠️ Angel One RMS API failed:", data)
             return 0.0
 
     except Exception as e:
-        print(f"❌ Error fetching funds: {e}")
+        print(f"❌ Exception in get_available_funds(): {e}")
         return 0.0
