@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import base64
 import pickle
 from datetime import datetime
-import request
+import requests
 
 # 🔐 Replace this with your actual Gist Raw URL (make sure it's a RAW URL!)
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac"
