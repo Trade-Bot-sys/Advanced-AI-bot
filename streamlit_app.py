@@ -14,6 +14,19 @@ from generate_access_token import generate_token  # ✅ import function
 # 🔐 Replace this with your actual Gist Raw URL (make sure it's a RAW URL!)
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 
+def fetch_access_token_from_gist(gist_url):
+    try:
+        response = requests.get(gist_url)
+        if response.status_code == 200:
+            token_data = response.json()
+            return token_data
+        else:
+            st.error("❌ Failed to fetch access_token.json from Gist")
+            return None
+    except Exception as e:
+        st.error(f"❌ Error fetching access_token.json: {e}")
+        return None
+
 # 📥 Load tokens at the start of the app
 def is_token_fresh():
     try:
@@ -24,7 +37,7 @@ def is_token_fresh():
         return token_time == datetime.now().date()
     except:
         return False
-
+        
 # 📥 Step 1: Fetch token from Gist
 tokens = fetch_access_token_from_gist(GIST_RAW_URL)
 
@@ -59,18 +72,6 @@ if tokens:
 else:
     st.stop()
 
-def fetch_access_token_from_gist(gist_url):
-    try:
-        response = requests.get(gist_url)
-        if response.status_code == 200:
-            token_data = response.json()
-            return token_data
-        else:
-            st.error("❌ Failed to fetch access_token.json from Gist")
-            return None
-    except Exception as e:
-        st.error(f"❌ Error fetching access_token.json: {e}")
-        return None
         
 # ✅ Define decode function first
 def decode_and_save_base64(input_file, output_file):
