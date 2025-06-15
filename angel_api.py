@@ -9,9 +9,10 @@ access_data = requests.get(ACCESS_JSON_URL).json()
 
 TOKEN = access_data["access_token"]
 API_KEY = access_data["api_key"]
-CLIENT_LOCAL_IP = access_data["local_ip"]
-CLIENT_PUBLIC_IP = access_data["public_ip"]
-MAC_ADDRESS = access_data["mac_address"]
+
+CLIENT_LOCAL_IP = os.getenv('CLIENT_LOCAL_IP')
+CLIENT_PUBLIC_IP = os.getenv('CLIENT_PUBLIC_IP')
+MAC_ADDRESS = os.getenv('MAC_ADDRESS')
 
 BASE_URL = "apiconnect.angelone.in"
 
