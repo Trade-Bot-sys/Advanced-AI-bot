@@ -2,12 +2,16 @@
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, time
-from bot import trade_logic
-# from trailing import check_trailing_sl  # Optional: Only if you use a trailing SL system
+from pytz import timezone
+import threading
+from bot import trade_logic, monitor_holdings  # monitor_holdings added
+
+# ✅ Define timezone
+INDIA_TZ = timezone("Asia/Kolkata")
 
 def is_market_open():
     """Returns True if market is open now (Mon–Fri, 9:15 AM – 3:30 PM IST)."""
-    now = datetime.now()
+    now = datetime.now(INDIA_TZ)
     open_time = time(9, 15)
     close_time = time(15, 30)
     is_weekday = now.weekday() < 5
@@ -18,25 +22,26 @@ def get_market_status():
     return "🟢 OPEN" if is_market_open() else "🔴 CLOSED"
 
 def schedule_daily_trade():
-    """Starts background scheduler for AI trade logic + trailing stop logic."""
+    """Starts background scheduler for AI trade logic + trailing/exit logic."""
     scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
 
     def run_trade():
         if is_market_open():
-            print("✅ Market open — executing trade logic")
-            trade_logic()
+            print("✅ Market open — running trade logic")
+            threading.Thread(target=trade_logic).start()
         else:
-            print("❌ Market closed — skipping bot")
+            print("❌ Market closed — skipping trade logic")
 
-    def run_trailing_logic():
+    def run_exit_check():
         if is_market_open():
-            print("🔁 Checking trailing stop-loss...")
-            # check_trailing_sl()  # Add your trailing SL handler if needed
+            print("🔁 Checking exit conditions for open trades...")
+            threading.Thread(target=monitor_holdings).start()
 
-    # 🔁 Schedule daily trade at 9:15 AM
+    # ✅ Schedule trade logic daily at 9:15 AM
     scheduler.add_job(run_trade, trigger="cron", hour=9, minute=15)
 
-    # 🔁 Run trailing SL checker every 10 mins
-    scheduler.add_job(run_trailing_logic, trigger="interval", minutes=10)
+    # 🔁 Check for exits every 10 minutes
+    scheduler.add_job(run_exit_check, trigger="interval", minutes=10)
 
     scheduler.start()
+    print("⏱️ Scheduler started")
