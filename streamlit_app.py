@@ -103,9 +103,9 @@ st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
 API_KEY = tokens.get("api_key")
 JWT_TOKEN = tokens.get("access_token")
 CLIENT_CODE = tokens.get("client_code")
-LOCAL_IP = os.getenv("CLIENT_LOCAL_IP")
-PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP")
-MAC_ADDRESS = os.getenv("MAC_ADDRESS")
+LOCAL_IP = 127.0.0.1
+PUBLIC_IP = 103.52.220.1
+MAC_ADDRESS = AA:BB:CC:DD:EE:FF
 
 def get_available_funds():
     try:
@@ -113,19 +113,25 @@ def get_available_funds():
             "Authorization": f"Bearer {JWT_TOKEN}",
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "X-ClientLocalIP": LOCAL_IP,
-            "X-ClientPublicIP": PUBLIC_IP,
-            "X-MACAddress": MAC_ADDRESS,
+            "X-ClientLocalIP": LOCAL_IP or "192.168.1.1",
+            "X-ClientPublicIP": PUBLIC_IP or "122.168.1.1",
+            "X-MACAddress": MAC_ADDRESS or "00:00:5e:00:53:af",
             "X-PrivateKey": API_KEY
         }
+
         payload = {
             "clientcode": CLIENT_CODE
         }
+
         response = requests.post(
             "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
             json=payload, headers=headers)
 
-        data = response.json()
+        print("🔍 RMS Raw Response:", response.text)  # ADD THIS
+        print("🔍 Status Code:", response.status_code)
+
+        data = response.json()  # this line fails if response is not JSON
+
         if response.status_code == 200 and "data" in data:
             return float(data["data"].get("availablecash", 0.0))
         else:
