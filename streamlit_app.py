@@ -10,8 +10,14 @@ import base64
 import pickle
 from datetime import datetime
 import requests
-from generate_access_token import generate_token  # ✅ import function
-# 🔐 Replace this with your actual Gist Raw URL (make sure it's a RAW URL!)
+from generate_access_token import generate_token
+from alerts import send_telegram_alert, send_trade_summary_email
+from executor import place_order, get_live_price
+from strategies import get_final_signal, should_exit_trade
+from scheduler import schedule_daily_trade, get_market_status
+from helpers import load_holdings, save_holdings, run_backtest
+from manual_trade import manual_trade_ui
+
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 
 def fetch_access_token_from_gist(gist_url):
@@ -27,7 +33,6 @@ def fetch_access_token_from_gist(gist_url):
         st.error(f"❌ Error fetching access_token.json: {e}")
         return None
 
-# 📥 Load tokens at the start of the app
 def is_token_fresh():
     try:
         file_path = "access_token.json"
@@ -37,20 +42,16 @@ def is_token_fresh():
         return token_time == datetime.now().date()
     except:
         return False
-        
-# 📥 Step 1: Fetch token from Gist
+
 tokens = fetch_access_token_from_gist(GIST_RAW_URL)
 
-# 📥 Step 2: Save to local for freshness check
 if tokens:
     with open("access_token.json", "w") as f:
         json.dump(tokens, f, indent=2)
 
-# 📥 Step 3: If token is missing or stale, regenerate
 if not tokens or not is_token_fresh():
     st.warning("⚠️ Token not fresh. Regenerating...")
     generate_token()
-    # Re-fetch after regeneration
     tokens = fetch_access_token_from_gist(GIST_RAW_URL)
     if tokens:
         with open("access_token.json", "w") as f:
@@ -58,12 +59,13 @@ if not tokens or not is_token_fresh():
     else:
         st.error("❌ Failed to fetch token even after regeneration.")
         st.stop()
+
 try:
     token_time = datetime.fromtimestamp(os.path.getmtime("access_token.json"))
     st.sidebar.markdown(f"📅 Token refreshed: **{token_time.strftime('%Y-%m-%d %H:%M:%S')}**")
 except:
     st.sidebar.warning("⚠️ Token timestamp not available.")
-    
+
 if tokens:
     access_token = tokens.get("access_token")
     feed_token = tokens.get("feed_token")
@@ -72,8 +74,6 @@ if tokens:
 else:
     st.stop()
 
-        
-# ✅ Define decode function first
 def decode_and_save_base64(input_file, output_file):
     with open(input_file, "rb") as f:
         base64_data = f.read()
@@ -82,7 +82,6 @@ def decode_and_save_base64(input_file, output_file):
     with open(output_file, "wb") as f:
         f.write(decoded_data)
 
-# ✅ Load AI model
 MODEL_PATH = "ai_model/advanced_model.pkl"
 try:
     with open(MODEL_PATH, "rb") as f:
@@ -94,32 +93,19 @@ except Exception as e:
 
 print("✅ Dashboard initialization complete")
 
-# ✅ Import modules
-from alerts import send_telegram_alert, send_trade_summary_email
-from executor import place_order, get_live_price
-from strategies import get_final_signal, should_exit_trade
-from scheduler import schedule_daily_trade, get_market_status
-from helpers import load_holdings, save_holdings, run_backtest
-from manual_trade import manual_trade_ui
-
-# ✅ Streamlit setup
 print("✅ App started")
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
 
 st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
-# 💰 Show available funds
 
-# ✅ Load credentials
-# ✅ Load credentials directly from fetched Gist data
 API_KEY = tokens.get("api_key")
 JWT_TOKEN = tokens.get("access_token")
 CLIENT_CODE = tokens.get("client_code")
-
-# ✅ Angel One RMS Funds API Integration
 LOCAL_IP = os.getenv("CLIENT_LOCAL_IP")
 PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP")
 MAC_ADDRESS = os.getenv("MAC_ADDRESS")
+
 def get_available_funds():
     try:
         headers = {
@@ -134,21 +120,11 @@ def get_available_funds():
         payload = {
             "clientcode": CLIENT_CODE
         }
-
-        # ✅ Print debug info
-        print("🔐 JWT_TOKEN:", JWT_TOKEN)
-        print("📦 Payload:", payload)
-        print("📨 Headers:", headers)
-
         response = requests.post(
             "https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
             json=payload, headers=headers)
 
-        print("📬 Status Code:", response.status_code)
-        print("📨 Raw Response:", response.text)
-
         data = response.json()
-
         if response.status_code == 200 and "data" in data:
             return float(data["data"].get("availablecash", 0.0))
         else:
@@ -158,29 +134,25 @@ def get_available_funds():
         st.error(f"❌ Exception fetching funds: {e}")
         return 0.0
 
-# ✅ NOW call the function and use it
 available_funds = get_available_funds()
 st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
-# ✅ Load stock list
+
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
     STOCK_LIST = [f"{s.strip()}.NS" for s in df_stocks["Symbol"] if isinstance(s, str)]
 except:
     STOCK_LIST = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS"]
 
-# ✅ Sidebar settings
 st.sidebar.header("⚙️ Trade Settings")
 def_tp = st.sidebar.number_input("Take Profit (₹)", value=10.0)
 def_sl = st.sidebar.number_input("Stop Loss (₹)", value=5.0)
 def_qty = st.sidebar.number_input("Quantity", value=1)
 
-# ✅ Load trade history
 if os.path.exists("trade_log.csv"):
     df_trades = pd.read_csv("trade_log.csv", names=["timestamp", "symbol", "action", "qty", "entry", "tp", "sl"])
 else:
     df_trades = pd.DataFrame(columns=["timestamp", "symbol", "action", "qty", "entry", "tp", "sl"])
 
-# ✅ Portfolio Panel
 st.sidebar.header("📊 Holdings Portfolio")
 holdings = load_holdings()
 
@@ -200,14 +172,13 @@ if holdings:
 else:
     st.sidebar.success("✅ No current holdings.")
 
-# ✅ Traded Stock Chart
 st.sidebar.header("📈 Bot Traded Stock Chart")
 bot_symbols = sorted(df_trades["symbol"].unique().tolist())
 bot_stock = st.sidebar.selectbox("View Traded Stock", bot_symbols)
 
 if bot_stock:
     st.subheader(f"📊 Live Chart: {bot_stock}")
-    chart_df = load_stock_chart(bot_stock)
+    chart_df = yf.download(bot_stock, period="7d", interval="15m")
     fig = go.Figure()
 
     fig.add_trace(go.Candlestick(
@@ -226,10 +197,8 @@ if bot_stock:
 
     st.plotly_chart(fig, use_container_width=True)
 
-# ✅ Manual Trading Panel (via helper)
 manual_trade_ui(STOCK_LIST, def_tp, def_sl)
 
-# ✅ Auto Exit Based on AI/SL/TP
 for symbol, data in holdings.copy().items():
     entry = data["entry"]
     qty = data["qty"]
@@ -248,7 +217,6 @@ for symbol, data in holdings.copy().items():
         pnl = (current_price - entry) * qty
         st.info(f"📌 Holding {symbol} | PnL ₹{pnl:.2f}")
 
-# ✅ Backtest Panel
 st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
 if st.button("Run Backtest"):
@@ -262,13 +230,10 @@ if st.button("Run Backtest"):
     else:
         st.error("❌ Failed to run backtest on selected stock.")
 
-# ✅ Manual Trigger for Summary Email
 if st.button("📩 Send Daily Trade Summary"):
     send_trade_summary_email()
     st.success("✅ Daily summary email sent.")
 
-# ✅ Daily Scheduler Trigger
 schedule_daily_trade()
 
-# ✅ Done
 st.success("✅ Smart AI Dashboard with Angel One, AI logic, auto trading, portfolio panel, and backtest support.")
