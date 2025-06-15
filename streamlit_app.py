@@ -73,12 +73,47 @@ st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
 
 st.sidebar.markdown(f"🕒 Market Status: **{get_market_status()}**")
+# 💰 Show available funds
+available_funds = get_available_funds()
+st.sidebar.success(f"💰 Available Funds: ₹{available_funds:.2f}")
 
 # ✅ Load credentials
-with open("access_token.json") as f:
-    token_data = json.load(f)
-API_KEY = token_data["api_key"]
-JWT_TOKEN = token_data["access_token"]
+# ✅ Load credentials directly from fetched Gist data
+API_KEY = tokens.get("api_key")
+JWT_TOKEN = tokens.get("access_token")
+CLIENT_CODE = tokens.get("client_code")
+
+# ✅ Angel One RMS Funds API Integration
+LOCAL_IP = os.getenv("CLIENT_LOCAL_IP", "127.0.0.1")
+PUBLIC_IP = os.getenv("CLIENT_PUBLIC_IP", "127.0.0.1")
+MAC_ADDRESS = os.getenv("MAC_ADDRESS", "00:00:00:00:00:00")
+
+def get_available_funds():
+    try:
+        headers = {
+            "Authorization": f"Bearer {JWT_TOKEN}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-ClientLocalIP": LOCAL_IP,
+            "X-ClientPublicIP": PUBLIC_IP,
+            "X-MACAddress": MAC_ADDRESS,
+            "X-PrivateKey": API_KEY
+        }
+        payload = {
+            "clientcode": CLIENT_CODE
+        }
+        response = requests.post("https://apiconnect.angelone.in/rest/secure/angelbroking/user/v1/getRMS",
+                                 json=payload, headers=headers)
+        data = response.json()
+
+        if response.status_code == 200 and "data" in data:
+            return float(data["data"].get("availablecash", 0.0))
+        else:
+            st.warning(f"⚠️ Could not fetch funds. Response: {data}")
+            return 0.0
+    except Exception as e:
+        st.error(f"❌ Exception fetching funds: {e}")
+        return 0.0
 
 # ✅ Load stock list
 try:
