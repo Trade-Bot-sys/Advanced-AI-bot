@@ -6,7 +6,7 @@ from angel_api import (
     modify_order as angel_modify_order,
     get_order_book as angel_get_order_book,
     get_trade_book as angel_get_trade_book,
-    get_ltp_data as angel_get_ltp,
+    get_ltp as angel_get_ltp_data,
     get_order_status as angel_get_order_status
 )
 
