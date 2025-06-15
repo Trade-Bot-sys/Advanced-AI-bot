@@ -9,27 +9,34 @@ import plotly.graph_objects as go
 import base64
 import pickle
 from datetime import datetime
+import request
 
-import firebase_admin
-from firebase_admin import credentials, storage
-import os
+# 🔐 Replace this with your actual Gist Raw URL (make sure it's a RAW URL!)
+GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac"
 
-def download_token_from_firebase():
-    # Initialize Firebase only once
-    if not firebase_admin._apps:
-        cred = credentials.Certificate("secrets/firebase-adminsdk.json")
-        firebase_admin.initialize_app(cred, {
-            'storageBucket': 'your-project-id.appspot.com'  # ← replace with your actual bucket
-        })
+def fetch_access_token_from_gist(gist_url):
+    try:
+        response = requests.get(gist_url)
+        if response.status_code == 200:
+            token_data = response.json()
+            return token_data
+        else:
+            st.error("❌ Failed to fetch access_token.json from Gist")
+            return None
+    except Exception as e:
+        st.error(f"❌ Error fetching access_token.json: {e}")
+        return None
 
-    # Download access_token.json from Firebase
-    bucket = storage.bucket()
-    blob = bucket.blob("access_token.json")
-    blob.download_to_filename("access_token.json")
-    print("✅ access_token.json downloaded from Firebase")
+# 📥 Load tokens at the start of the app
+tokens = fetch_access_token_from_gist(GIST_RAW_URL)
 
-# 🔁 Call this before using the token anywhere
-download_token_from_firebase()
+if tokens:
+    access_token = tokens.get("access_token")
+    feed_token = tokens.get("feed_token")
+    api_key = tokens.get("api_key")
+    client_code = tokens.get("client_code")
+else:
+    st.stop()
 
 # ✅ Define decode function first
 def decode_and_save_base64(input_file, output_file):
