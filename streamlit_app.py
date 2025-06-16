@@ -227,9 +227,8 @@ st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
 
 if st.button("Run Backtest"):
-    try:
-        model = load_model()  # Load model only when needed
-        result = run_backtest(backtest_stock, model)
+    df = yf.download(backtest_stock, period="6mo", interval="1d")
+    result = run_backtest(df, model)
         if result:
             st.write("### 📊 Backtest Results")
             st.metric("Accuracy", f"{result['accuracy']:.2f}%")
