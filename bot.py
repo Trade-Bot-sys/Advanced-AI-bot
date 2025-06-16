@@ -2,6 +2,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime, time
+from utils import convert_to_ist
 from executor import (
     place_order,
     get_live_price,
