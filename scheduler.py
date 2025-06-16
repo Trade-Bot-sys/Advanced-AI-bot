@@ -1,10 +1,9 @@
-# scheduler.py
-
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, time
 from pytz import timezone
 import threading
-from bot import trade_logic, monitor_holdings  # monitor_holdings added
+from bot import trade_logic, monitor_holdings
+from alerts import send_trade_summary_email  # ✅ Added
 
 # ✅ Define timezone
 INDIA_TZ = timezone("Asia/Kolkata")
@@ -23,7 +22,7 @@ def get_market_status():
 
 def schedule_daily_trade():
     """Starts background scheduler for AI trade logic + trailing/exit logic."""
-    scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
+    scheduler = BackgroundScheduler(timezone=INDIA_TZ)
 
     def run_trade():
         if is_market_open():
@@ -37,11 +36,18 @@ def schedule_daily_trade():
             print("🔁 Checking exit conditions for open trades...")
             threading.Thread(target=monitor_holdings).start()
 
-    # ✅ Schedule trade logic daily at 9:15 AM
+    def send_daily_email():
+        print("📬 Sending daily summary email...")
+        threading.Thread(target=send_trade_summary_email).start()
+
+    # ✅ Schedule trade logic daily at 9:15 AM IST
     scheduler.add_job(run_trade, trigger="cron", hour=9, minute=15)
 
-    # 🔁 Check for exits every 10 minutes
+    # 🔁 Schedule exit check every 10 minutes
     scheduler.add_job(run_exit_check, trigger="interval", minutes=10)
+
+    # 📩 Schedule daily summary email at 4:30 PM IST
+    scheduler.add_job(send_daily_email, trigger="cron", hour=16, minute=30)
 
     scheduler.start()
     print("⏱️ Scheduler started")
