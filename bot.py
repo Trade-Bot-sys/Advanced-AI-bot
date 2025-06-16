@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 import joblib
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
-from angelone_api import get_available_funds
+from streamlit_app import get_available_funds
 
 # ✅ Load token
 with open("access_token.json") as f:
