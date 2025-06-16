@@ -2,30 +2,45 @@ import json
 from datetime import datetime
 import numpy as np
 import pandas as pd
+from sklearn.metrics import accuracy_score
 
 HOLDINGS_FILE = "holdings.json"
+TRADE_LOG_FILE = "trade_log.csv"
 
 # ✅ Load Holdings
 def load_holdings():
     try:
         with open(HOLDINGS_FILE, "r") as f:
             return json.load(f)
-    except:
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        print(f"❌ Error loading holdings: {e}")
         return {}
 
 # ✅ Save Holdings
 def save_holdings(data):
-    with open(HOLDINGS_FILE, "w") as f:
-        json.dump(data, f, indent=2, default=str)
+    try:
+        with open(HOLDINGS_FILE, "w") as f:
+            json.dump(data, f, indent=2, default=str)
+    except Exception as e:
+        print(f"❌ Error saving holdings: {e}")
 
 # ✅ Log Exit Trade
 def log_exit_trade(symbol, exit_price, reason, exit_time):
-    with open("trade_log.csv", "a") as f:
-        f.write(f"{exit_time},{symbol},SELL,1,{exit_price},{reason},,\n")
+    try:
+        with open(TRADE_LOG_FILE, "a") as f:
+            f.write(f"{exit_time},{symbol},SELL,1,{exit_price},{reason},,\n")
+    except Exception as e:
+        print(f"❌ Error logging trade: {e}")
 
 # ✅ Convert string to datetime
 def pretty_time(ts):
-    return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+    try:
+        return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        print(f"❌ Time parsing error: {e}")
+        return datetime.now()
 
 # ✅ Compute RSI
 def compute_rsi(series, period=14):
@@ -35,13 +50,16 @@ def compute_rsi(series, period=14):
 
     avg_gain = gain.rolling(window=period).mean()
     avg_loss = loss.rolling(window=period).mean()
+
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
+
     return rsi
 
-# ✅ Backtest Utility
+# ✅ AI Model Backtest
 def run_backtest(df, model):
-    from sklearn.metrics import accuracy_score
+    if isinstance(df, str):
+        raise ValueError("❌ Expected DataFrame, got string instead.")
 
     df = df.copy()
     df.dropna(inplace=True)
