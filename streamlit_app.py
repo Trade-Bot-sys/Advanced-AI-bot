@@ -217,10 +217,15 @@ for symbol, data in holdings.copy().items():
         pnl = (current_price - entry) * qty
         st.info(f"📌 Holding {symbol} | PnL ₹{pnl:.2f}")
 
+from utils import load_model  # or wherever your model loading function is
+
+model = load_model("ai_model/advanced_model.pkl")  # Make sure this is the correct path and function
+
 st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
+
 if st.button("Run Backtest"):
-    result = run_backtest(backtest_stock)
+    result = run_backtest(backtest_stock, model)
     if result:
         st.write("### 📊 Backtest Results")
         st.metric("Accuracy", f"{result['accuracy']:.2f}%")
