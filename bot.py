@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import joblib
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
+from angelone_api import get_available_funds
 
 # ✅ Load token
 with open("access_token.json") as f:
@@ -42,7 +43,8 @@ TRAIL_BUFFER = 2  # ₹
 MAX_HOLD_DAYS = 5
 
 # Trade tracker
-portfolio = {}
+available_funds = get_available_funds()  # Fetch from broker API or manually set for test
+portfolio = {}  # Store current holdings
 
 # ✅ Market timing
 def is_market_open():
@@ -103,6 +105,8 @@ def predict_signal(symbol):
 
 # ✅ Core Trade Logic
 def trade_logic():
+    global available_funds  # To update available_funds after each trade
+
     if not is_market_open():
         print(f"⏰ Market closed. Skipping at {datetime.now()} 🚫")
         return
@@ -110,16 +114,24 @@ def trade_logic():
     print(f"🚀 Running trade logic at {datetime.now()}...")
 
     top_stocks = []
+
+    # Step 1: Predict and filter top affordable BUY stocks
     for symbol in STOCK_LIST:
         try:
             signal = predict_signal(symbol)
             if signal == "BUY":
-                top_stocks.append(symbol)
+                price = get_live_price(symbol)
+                if available_funds >= price:
+                    top_stocks.append(symbol)
+                else:
+                    print(f"💸 Skipping {symbol} — Not enough funds (₹{available_funds:.2f} < ₹{price:.2f})")
         except Exception as e:
             print(f"⚠️ Error on {symbol}: {e}")
 
+    # Limit to top 5 stocks only
     top_stocks = top_stocks[:5]
 
+    # Step 2: Place BUY order for each eligible stock
     for symbol in top_stocks:
         try:
             if symbol in portfolio:
@@ -127,20 +139,27 @@ def trade_logic():
                 continue
 
             entry_price = get_live_price(symbol)
-            place_order(symbol, "BUY", QUANTITY)
-            portfolio[symbol] = {
-                "entry": entry_price,
-                "time": datetime.now()
-            }
 
-            send_telegram_alert(symbol, "BUY", entry_price, TAKE_PROFIT, STOP_LOSS)
-            with open("trade_log.csv", "a") as log:
-                log.write(f"{datetime.now()},{symbol},BUY,{QUANTITY},{entry_price},{TAKE_PROFIT},{STOP_LOSS}\n")
+            # Calculate how many shares we can buy
+            max_qty = int(available_funds // entry_price)
 
-            print(f"✅ Bought {symbol} at ₹{entry_price}")
+            if max_qty >= 1:
+                place_order(symbol, "BUY", max_qty)
+                portfolio[symbol] = {
+                    "entry": entry_price,
+                    "time": datetime.now()
+                }
+                print(f"✅ Bought {max_qty} shares of {symbol} at ₹{entry_price:.2f}")
+                
+                # Update remaining funds after trade
+                available_funds -= max_qty * entry_price
+                print(f"💰 Remaining funds: ₹{available_funds:.2f}")
+            else:
+                print(f"❌ Not enough funds to buy {symbol} at ₹{entry_price:.2f}")
+        
         except Exception as e:
-            print(f"❌ Trade error for {symbol}: {e}")
-
+            print(f"❌ Error placing order for {symbol}: {e}")
+            
 # ✅ Monitor + Exit Logic
 def monitor_holdings():
     for symbol, info in list(portfolio.items()):
