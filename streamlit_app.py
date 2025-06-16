@@ -31,6 +31,7 @@ from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
+from utils import convert_to_ist
 print("✅ Dashboard started")
 
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
