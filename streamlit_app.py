@@ -226,19 +226,27 @@ def load_model(path="ai_model/advanced_model.pkl"):
 st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
 
+# --- Backtest Section ---
+st.subheader("🔁 Backtest a Stock")
+
+backtest_stock = st.text_input("Enter stock symbol (e.g. INFY.NS):", "RELIANCE.NS")
+
 if st.button("Run Backtest"):
-    df = yf.download(backtest_stock, period="6mo", interval="1d")
-    result = run_backtest(df, model)
-        if result:
-            st.write("### 📊 Backtest Results")
-            st.metric("Accuracy", f"{result['accuracy']:.2f}%")
-            st.metric("Cumulative Return", f"{result['cumulative_return']:.2f}%")
-            st.metric("Win Rate", f"{result['win_rate']:.2f}%")
-            st.plotly_chart(result["fig"], use_container_width=True)
+    try:
+        df = yf.download(backtest_stock, period="6mo", interval="1d")
+        if df.empty:
+            st.warning("No data found for the selected stock.")
         else:
-            st.error("❌ Failed to run backtest on selected stock.")
+            result = run_backtest(df, model)
+
+            if result:
+                st.success(f"Backtest completed for {backtest_stock}")
+                st.metric("📈 Accuracy", f"{result['accuracy']*100:.2f}%")
+                st.metric("💰 Total Return", f"{result['return']*100:.2f}%")
+                st.metric("✅ Win Rate", f"{result['win_rate']*100:.2f}%")
+                st.line_chart(result["equity"])
     except Exception as e:
-        st.error(f"❌ Error: {e}")
+        st.error(f"❌ Error running backtest: {e}")
 
 if st.button("📩 Send Daily Trade Summary"):
     send_trade_summary_email()
