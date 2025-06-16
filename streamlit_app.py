@@ -276,9 +276,9 @@ st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
 
 # --- Backtest Section ---
-st.subheader("🔁 Backtest a Stock")
+#st.subheader("🔁 Backtest a Stock")
 
-backtest_stock = st.text_input("Enter stock symbol (e.g. INFY.NS):", "RELIANCE.NS")
+#backtest_stock = st.text_input("Enter stock symbol (e.g. INFY.NS):", "RELIANCE.NS")
 
 if st.button("Run Backtest"):
     if model is None:
