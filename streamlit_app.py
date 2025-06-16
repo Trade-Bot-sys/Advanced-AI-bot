@@ -11,6 +11,14 @@ from datetime import datetime
 import requests
 import joblib
 
+# ✅ Load trained AI model
+try:
+    model = joblib.load("advanced_model.pkl")
+    print("✅ Model loaded successfully.")
+except Exception as e:
+    model = None
+    print(f"❌ Model loading failed: {e}")
+
 # ✅ This must be the first Streamlit command
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 
@@ -232,21 +240,24 @@ st.subheader("🔁 Backtest a Stock")
 backtest_stock = st.text_input("Enter stock symbol (e.g. INFY.NS):", "RELIANCE.NS")
 
 if st.button("Run Backtest"):
-    try:
-        df = yf.download(backtest_stock, period="6mo", interval="1d")
-        if df.empty:
-            st.warning("No data found for the selected stock.")
-        else:
-            result = run_backtest(df, model)
+    if model is None:
+        st.error("❌ AI Model not loaded. Please check advanced_model.pkl")
+    else:
+        try:
+            df = yf.download(backtest_stock, period="6mo", interval="1d")
+            if df.empty:
+                st.warning("No data found for the selected stock.")
+            else:
+                result = run_backtest(df, model)
 
-            if result:
-                st.success(f"Backtest completed for {backtest_stock}")
-                st.metric("📈 Accuracy", f"{result['accuracy']*100:.2f}%")
-                st.metric("💰 Total Return", f"{result['return']*100:.2f}%")
-                st.metric("✅ Win Rate", f"{result['win_rate']*100:.2f}%")
-                st.line_chart(result["equity"])
-    except Exception as e:
-        st.error(f"❌ Error running backtest: {e}")
+                if result:
+                    st.success(f"Backtest completed for {backtest_stock}")
+                    st.metric("📈 Accuracy", f"{result['accuracy']*100:.2f}%")
+                    st.metric("💰 Total Return", f"{result['return']*100:.2f}%")
+                    st.metric("✅ Win Rate", f"{result['win_rate']*100:.2f}%")
+                    st.line_chart(result["equity"])
+        except Exception as e:
+            st.error(f"❌ Error running backtest: {e}")
 
 if st.button("📩 Send Daily Trade Summary"):
     send_trade_summary_email()
