@@ -159,7 +159,7 @@ def monitor_holdings():
                 time_held >= MAX_HOLD_DAYS
             ):
                 place_order(symbol, "SELL", QUANTITY)
-                send_telegram_alert(symbol, "SELL", current_price, pnl, "Exit")
+                send_telegram_alert(symbol, "SELL", current_price, reason="AI Exit / TP/SL Trigger")
                 plot_trade_chart(symbol, entry_price, current_price)
 
                 with open("trade_log.csv", "a") as log:
