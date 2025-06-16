@@ -19,20 +19,14 @@ def load_holdings():
         return {}
 
 # ✅ Save Holdings
-def save_holdings(data):
-    try:
-        with open(HOLDINGS_FILE, "w") as f:
-            json.dump(data, f, indent=2, default=str)
-    except Exception as e:
-        print(f"❌ Error saving holdings: {e}")
+from google_sheets import update_holdings_sheet, log_trade_to_sheet
 
-# ✅ Log Exit Trade
+def save_holdings(data):
+    update_holdings_sheet(data)  # Push to Google Sheets
+
 def log_exit_trade(symbol, exit_price, reason, exit_time):
-    try:
-        with open(TRADE_LOG_FILE, "a") as f:
-            f.write(f"{exit_time},{symbol},SELL,1,{exit_price},{reason},,\n")
-    except Exception as e:
-        print(f"❌ Error logging trade: {e}")
+    row = [exit_time, symbol, "SELL", 1, exit_price, reason, "", ""]
+    log_trade_to_sheet(row)  # Append to Google Sheets
 
 # ✅ Convert string to datetime
 def pretty_time(ts):
