@@ -10,6 +10,7 @@ import http.client
 from datetime import datetime
 import requests
 import joblib
+import gspread
 
 # ✅ Load trained AI model
 try:
@@ -159,6 +160,14 @@ def_qty = st.sidebar.number_input("Quantity", value=1)
 
 from oauth2client.service_account import ServiceAccountCredentials
 
+# Define required columns globally to avoid NameError
+required_columns = [
+    "timestamp", "symbol", "action", "qty", "entry", "tp", "sl", "exit_price", "pnl", "status",
+    "strategy", "reason", "holding_days", "exit_time", "trailing_sl_used",
+    "market_condition", "model_confidence"
+]
+
+# Load credentials from environment
 GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -169,21 +178,17 @@ if GOOGLE_CREDENTIALS_JSON:
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
 
-        # Sheet Load
+        # Try loading the sheet
         sheet = client.open_by_key("1GTmmYKh6cFwtSTpWATMDoL0Z0RgQ5OWNaHklOeUXPQs").worksheet("TradeLog")
         records = sheet.get_all_records()
 
-        required_columns = [
-            "timestamp", "symbol", "action", "qty", "entry", "tp", "sl", "exit_price", "pnl", "status",
-            "strategy", "reason", "holding_days", "exit_time", "trailing_sl_used",
-            "market_condition", "model_confidence"
-        ]
-
+        # Create dataframe from records or empty columns
         if records:
             df_trades = pd.DataFrame(records)
         else:
             df_trades = pd.DataFrame(columns=required_columns)
 
+        # Ensure all required columns exist
         for col in required_columns:
             if col not in df_trades.columns:
                 df_trades[col] = None
@@ -195,11 +200,6 @@ if GOOGLE_CREDENTIALS_JSON:
         df_trades = pd.DataFrame(columns=required_columns)
 else:
     st.error("❌ Google credentials environment variable (GOOGLE_CREDENTIALS_JSON) missing.")
-    required_columns = [
-        "timestamp", "symbol", "action", "qty", "entry", "tp", "sl", "exit_price", "pnl", "status",
-        "strategy", "reason", "holding_days", "exit_time", "trailing_sl_used",
-        "market_condition", "model_confidence"
-    ]
     df_trades = pd.DataFrame(columns=required_columns)
     
 st.sidebar.header("📊 Holdings Portfolio")
