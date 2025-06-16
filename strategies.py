@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
-
+from utils import convert_to_ist
 # === Load AI Model (Without Scaler) ===
 MODEL_PATH = "ai_model/advanced_model.pkl"
 
