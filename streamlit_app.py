@@ -9,6 +9,7 @@ import pickle
 import http.client
 from datetime import datetime
 import requests
+import joblib
 
 # ✅ This must be the first Streamlit command
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
@@ -217,23 +218,28 @@ for symbol, data in holdings.copy().items():
         pnl = (current_price - entry) * qty
         st.info(f"📌 Holding {symbol} | PnL ₹{pnl:.2f}")
 
-from utils import load_model  # or wherever your model loading function is
-
-model = load_model("ai_model/advanced_model.pkl")  # Make sure this is the correct path and function
+#from utils import load_model  # or wherever your model loading function is
+def load_model(path="ai_model/advanced_model.pkl"):
+    """Load the trained AI model from .pkl file."""
+    return joblib.load(path)
 
 st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
 
 if st.button("Run Backtest"):
-    result = run_backtest(backtest_stock, model)
-    if result:
-        st.write("### 📊 Backtest Results")
-        st.metric("Accuracy", f"{result['accuracy']:.2f}%")
-        st.metric("Cumulative Return", f"{result['cumulative_return']:.2f}%")
-        st.metric("Win Rate", f"{result['win_rate']:.2f}%")
-        st.plotly_chart(result["fig"], use_container_width=True)
-    else:
-        st.error("❌ Failed to run backtest on selected stock.")
+    try:
+        model = load_model()  # Load model only when needed
+        result = run_backtest(backtest_stock, model)
+        if result:
+            st.write("### 📊 Backtest Results")
+            st.metric("Accuracy", f"{result['accuracy']:.2f}%")
+            st.metric("Cumulative Return", f"{result['cumulative_return']:.2f}%")
+            st.metric("Win Rate", f"{result['win_rate']:.2f}%")
+            st.plotly_chart(result["fig"], use_container_width=True)
+        else:
+            st.error("❌ Failed to run backtest on selected stock.")
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
 
 if st.button("📩 Send Daily Trade Summary"):
     send_trade_summary_email()
