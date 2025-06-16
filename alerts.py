@@ -17,10 +17,14 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 EMAIL = os.getenv("EMAIL_ADDRESS")
 EMAIL_PASS = os.getenv("EMAIL_PASSWORD")
 
-def send_telegram_alert(symbol, action, price, tp=0, sl=0):
-    """Sends a formatted trade alert to Telegram."""
+def send_telegram_alert(symbol, action, price, tp=0, sl=0, reason=None):
+    """Sends a formatted trade alert to Telegram with optional reason."""
     try:
-        msg = f"🚨 {action.upper()} {symbol}\n💸 Price: ₹{price:.2f}\n🎯 TP: ₹{tp:.2f}, 🛑 SL: ₹{sl:.2f}"
+        msg = f"🚨 {action.upper()} {symbol}\n💸 Price: ₹{price:.2f}"
+        if action.upper() == "BUY":
+            msg += f"\n🎯 TP: ₹{tp:.2f}, 🛑 SL: ₹{sl:.2f}"
+        if reason:
+            msg += f"\n📌 Reason: {reason}"
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         response = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": msg})
         if response.status_code != 200:
