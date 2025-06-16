@@ -112,7 +112,7 @@ def get_available_funds():
     try:
         conn = http.client.HTTPSConnection("apiconnect.angelone.in")
         headers = {
-            'Authorization': f"Bearer {os.getenv('AUTHORIZATION_TOKEN')}",
+            'Authorization': f'Bearer {JWT_TOKEN}',
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'X-UserType': 'USER',
