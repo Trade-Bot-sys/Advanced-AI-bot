@@ -43,7 +43,10 @@ TRAIL_BUFFER = 2  # ₹
 MAX_HOLD_DAYS = 5
 
 # Trade tracker
-available_funds = get_available_funds()  # Fetch from broker API or manually set for test
+try:
+    available_funds = get_available_funds()
+except:
+    available_funds = 1000  # Or any safe fallback# Fetch from broker API or manually set for test
 portfolio = {}  # Store current holdings
 
 # ✅ Market timing
@@ -147,7 +150,8 @@ def trade_logic():
                 place_order(symbol, "BUY", max_qty)
                 portfolio[symbol] = {
                     "entry": entry_price,
-                    "time": datetime.now()
+                    "time": datetime.now(),
+                    "qty": max_qty
                 }
                 print(f"✅ Bought {max_qty} shares of {symbol} at ₹{entry_price:.2f}")
                 
@@ -178,10 +182,10 @@ def monitor_holdings():
                 signal == "SELL" or
                 time_held >= MAX_HOLD_DAYS
             ):
-                place_order(symbol, "SELL", QUANTITY)
+                place_order(symbol, "SELL", portfolio[symbol].get("qty", 1))
                 send_telegram_alert(symbol, "SELL", current_price, reason="AI Exit / TP/SL Trigger")
                 plot_trade_chart(symbol, entry_price, current_price)
-
+                
                 with open("trade_log.csv", "a") as log:
                     log.write(f"{datetime.now()},{symbol},SELL,{QUANTITY},{current_price},{pnl},AI_EXIT\n")
 
