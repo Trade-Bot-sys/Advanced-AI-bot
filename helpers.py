@@ -3,7 +3,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
-
+from utils import convert_to_ist
 HOLDINGS_FILE = "holdings.json"
 TRADE_LOG_FILE = "trade_log.csv"
 
