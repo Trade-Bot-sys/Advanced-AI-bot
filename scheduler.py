@@ -4,7 +4,7 @@ from pytz import timezone
 import threading
 from bot import trade_logic, monitor_holdings
 from alerts import send_trade_summary_email  # ✅ Added
-
+from utils import convert_to_ist
 # ✅ Define timezone
 INDIA_TZ = timezone("Asia/Kolkata")
 
