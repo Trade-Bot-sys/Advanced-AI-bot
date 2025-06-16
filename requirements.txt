@@ -19,3 +19,4 @@ xgboost
 prophet
 matplotlib
 seaborn
+ta
