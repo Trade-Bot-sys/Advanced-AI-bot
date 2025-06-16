@@ -20,3 +20,5 @@ prophet
 matplotlib
 seaborn
 ta
+gspread
+oauth2client
