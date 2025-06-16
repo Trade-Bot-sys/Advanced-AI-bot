@@ -157,35 +157,51 @@ def_tp = st.sidebar.number_input("Take Profit (₹)", value=10.0)
 def_sl = st.sidebar.number_input("Stop Loss (₹)", value=5.0)
 def_qty = st.sidebar.number_input("Quantity", value=1)
 
-import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Google Sheets auth
+GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
+
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("smart-ai-bot-463112-a36ec5d41477.json", scope)
-client = gspread.authorize(creds)
 
-# Try loading full trade log from Google Sheets
-try:
-    sheet = client.open_by_key("1GTmmYKh6cFwtSTpWATMDoL0Z0RgQ5OWNaHklOeUXPQs").worksheet("TradeLog")
-    records = sheet.get_all_records()
-    df_trades = pd.DataFrame(records)
+if GOOGLE_CREDENTIALS_JSON:
+    try:
+        creds_dict = json.loads(GOOGLE_CREDENTIALS_JSON)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
 
+        # Sheet Load
+        sheet = client.open_by_key("1GTmmYKh6cFwtSTpWATMDoL0Z0RgQ5OWNaHklOeUXPQs").worksheet("TradeLog")
+        records = sheet.get_all_records()
+
+        required_columns = [
+            "timestamp", "symbol", "action", "qty", "entry", "tp", "sl", "exit_price", "pnl", "status",
+            "strategy", "reason", "holding_days", "exit_time", "trailing_sl_used",
+            "market_condition", "model_confidence"
+        ]
+
+        if records:
+            df_trades = pd.DataFrame(records)
+        else:
+            df_trades = pd.DataFrame(columns=required_columns)
+
+        for col in required_columns:
+            if col not in df_trades.columns:
+                df_trades[col] = None
+
+        st.success("✅ Loaded trade log from Google Sheets with full detail.")
+
+    except Exception as e:
+        st.error(f"❌ Google Sheets load failed: {e}")
+        df_trades = pd.DataFrame(columns=required_columns)
+else:
+    st.error("❌ Google credentials environment variable (GOOGLE_CREDENTIALS_JSON) missing.")
     required_columns = [
         "timestamp", "symbol", "action", "qty", "entry", "tp", "sl", "exit_price", "pnl", "status",
         "strategy", "reason", "holding_days", "exit_time", "trailing_sl_used",
         "market_condition", "model_confidence"
     ]
-
-    for col in required_columns:
-        if col not in df_trades.columns:
-            df_trades[col] = None
-
-    st.success("✅ Loaded trade log from Google Sheets with full detail.")
-except Exception as e:
-    st.error(f"❌ Google Sheets load failed: {e}")
     df_trades = pd.DataFrame(columns=required_columns)
-
+    
 st.sidebar.header("📊 Holdings Portfolio")
 holdings = load_holdings()
 
