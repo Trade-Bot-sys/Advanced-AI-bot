@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 import pytz
 import requests
-
+from utils import convert_to_ist
 # ---------- Gist Uploader ----------
 def update_gist_token(gist_id, github_token, new_content):
     try:
