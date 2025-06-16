@@ -13,13 +13,18 @@ from executor import (
     get_order_status
 )
 from alerts import send_telegram_alert
-from strategies import get_final_signal, should_exit_trade
 import yfinance as yf
 import plotly.graph_objects as go
+import joblib
+from ta.momentum import RSIIndicator
+from ta.trend import MACD
 
 # ✅ Load token
 with open("access_token.json") as f:
     token_data = json.load(f)
+
+# ✅ Load AI model
+model = joblib.load("ai_model/advanced_model.pkl")
 
 # ✅ Load stock list
 try:
@@ -51,29 +56,49 @@ def plot_trade_chart(symbol, entry_price, exit_price):
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=df.index, y=df["Close"], mode="lines", name="Price"))
-
         fig.add_trace(go.Scatter(
             x=[df.index[-1]], y=[entry_price],
-            mode="markers+text",
-            marker=dict(color="green", size=12),
+            mode="markers+text", marker=dict(color="green", size=12),
             text=["BUY"], textposition="top center", name="BUY"
         ))
-
         fig.add_trace(go.Scatter(
             x=[df.index[-1]], y=[exit_price],
-            mode="markers+text",
-            marker=dict(color="red", size=12),
+            mode="markers+text", marker=dict(color="red", size=12),
             text=["SELL"], textposition="bottom center", name="SELL"
         ))
 
         fig.update_layout(title=f"{symbol} Trade Chart", xaxis_title="Date", yaxis_title="Price")
-
         chart_path = f"charts/{symbol.replace('.NS', '')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
         os.makedirs("charts", exist_ok=True)
         fig.write_html(chart_path)
         print(f"📈 Chart saved: {chart_path}")
     except Exception as e:
         print(f"❌ Chart error for {symbol}: {e}")
+
+# ✅ Predict with AI model
+def predict_signal(symbol):
+    df = yf.download(symbol, period="5d", interval="15m")
+    if df.empty or len(df) < 50:
+        return "HOLD"
+
+    df['RSI'] = RSIIndicator(df['Close']).rsi()
+    df['MACD'] = MACD(df['Close']).macd()
+    df['Returns'] = df['Close'].pct_change()
+    df.dropna(inplace=True)
+
+    latest = df[["RSI", "MACD", "Returns"]].iloc[-1:]
+
+    try:
+        pred = model.predict(latest)[0]
+        if pred == 1:
+            return "BUY"
+        elif pred == -1:
+            return "SELL"
+        else:
+            return "HOLD"
+    except Exception as e:
+        print(f"❌ Prediction error for {symbol}: {e}")
+        return "HOLD"
 
 # ✅ Core Trade Logic
 def trade_logic():
@@ -86,7 +111,7 @@ def trade_logic():
     top_stocks = []
     for symbol in STOCK_LIST:
         try:
-            signal = get_final_signal(symbol)
+            signal = predict_signal(symbol)
             if signal == "BUY":
                 top_stocks.append(symbol)
         except Exception as e:
@@ -115,26 +140,31 @@ def trade_logic():
         except Exception as e:
             print(f"❌ Trade error for {symbol}: {e}")
 
-# ✅ Check existing holdings for exit
+# ✅ Monitor + Exit Logic
 def monitor_holdings():
     for symbol, info in list(portfolio.items()):
         try:
-            should_exit = should_exit_trade(
-                symbol,
-                entry_price=info["entry"],
-                buy_time=info["time"],
-                tp=TAKE_PROFIT,
-                sl=STOP_LOSS,
-                trailing_buffer=TRAIL_BUFFER,
-                max_days=MAX_HOLD_DAYS
-            )
+            current_price = get_live_price(symbol)
+            entry_price = info["entry"]
+            pnl = current_price - entry_price
 
-            if should_exit:
-                exit_price = get_live_price(symbol)
+            # Sell if AI says SELL
+            signal = predict_signal(symbol)
+            time_held = (datetime.now() - info["time"]).days
+
+            if (
+                pnl >= TAKE_PROFIT or
+                pnl <= -STOP_LOSS or
+                signal == "SELL" or
+                time_held >= MAX_HOLD_DAYS
+            ):
                 place_order(symbol, "SELL", QUANTITY)
-                pnl = exit_price - info["entry"]
-                send_telegram_alert(symbol, "SELL", exit_price, pnl, "Exit")
-                plot_trade_chart(symbol, info["entry"], exit_price)
+                send_telegram_alert(symbol, "SELL", current_price, pnl, "Exit")
+                plot_trade_chart(symbol, entry_price, current_price)
+
+                with open("trade_log.csv", "a") as log:
+                    log.write(f"{datetime.now()},{symbol},SELL,{QUANTITY},{current_price},{pnl},AI_EXIT\n")
+
                 del portfolio[symbol]
                 print(f"💰 Sold {symbol} with PnL: ₹{pnl:.2f}")
         except Exception as e:
