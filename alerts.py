@@ -17,22 +17,24 @@ EMAIL = os.getenv("EMAIL_ADDRESS")
 EMAIL_PASS = os.getenv("EMAIL_PASSWORD")
 
 # ✅ Telegram Alert
-def send_telegram_alert(symbol, action, price, tp=0, sl=0, reason=None):
-    """Sends a formatted trade alert to Telegram with optional reason."""
-    try:
-        msg = f"🚨 {action.upper()} {symbol}\n💸 Price: ₹{price:.2f}"
-        if action.upper() == "BUY":
-            msg += f"\n🎯 TP: ₹{tp:.2f}, 🛑 SL: ₹{sl:.2f}"
-        if reason:
-            msg += f"\n📌 Reason: {reason}"
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        response = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": msg})
-        if response.status_code != 200:
-            print(f"❌ Telegram Error: {response.text}")
-        else:
-            print(f"✅ Telegram alert sent for {symbol} ({action})")
-    except Exception as e:
-        print("❌ Telegram Exception:", e)
+def send_telegram_alert(symbol, action, price, tp=None, sl=None, confidence=None, features=None, reason=None):
+    msg = f"📢 *{action}* signal for *{symbol}* at ₹{price:.2f}"
+    if confidence:
+        msg += f"\n🤖 AI Confidence: *{confidence:.2f}*"
+    if features:
+        msg += f"\n📊 Features → RSI: {features[0]:.2f}, MACD: {features[1]:.2f}, Returns: {features[2]:.4f}"
+    if tp and sl:
+        msg += f"\n🎯 TP: ₹{tp}, 🛑 SL: ₹{sl}"
+    if reason:
+        msg += f"\nℹ️ Reason: {reason}"
+
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": msg,
+        "parse_mode": "Markdown"
+    }
+
+    requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", data=payload)
 
 # ✅ Daily Summary Email
 def send_trade_summary_email(use_google_sheets=False):
