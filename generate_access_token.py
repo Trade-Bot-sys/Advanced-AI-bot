@@ -130,8 +130,8 @@ def generate_token():
 
 # ---------- Optional Scheduler ----------
 def run_scheduler():
-    print(f"[{datetime.now()}] 🕒 Scheduler started (08:50 AM IST daily)")
-    schedule.every().day.at("08:50").do(generate_token)
+    print(f"[{datetime.now()}] 🕒 Scheduler started (08:32 AM IST daily)")
+    schedule.every().day.at("08:32").do(generate_token)
     while True:
         schedule.run_pending()
         time.sleep(60)
