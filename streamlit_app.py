@@ -13,7 +13,7 @@ import joblib
 
 # ✅ Load trained AI model
 try:
-    model = joblib.load("advanced_model.pkl")
+    model = joblib.load("ai_model/advanced_model.pkl")
     print("✅ Model loaded successfully.")
 except Exception as e:
     model = None
