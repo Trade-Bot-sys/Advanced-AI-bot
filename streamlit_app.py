@@ -36,64 +36,34 @@ from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
-from funds import get_available_funds  # ✅ Utility function from funds.py
+from token_utils import fetch_tokens, is_token_fresh, get_token_timestamp
+from funds import get_available_funds
 
-# ✅ Gist URL for access token
-gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
-
-# ✅ Token functions
-def fetch_access_token():
-    try:
-        response = requests.get(gist_url)
-        return response.json() if response.status_code == 200 else None
-    except Exception as e:
-        st.error(f"❌ Error fetching token: {e}")
-        return None
-
-def is_token_fresh():
-    try:
-        token_time = datetime.fromtimestamp(os.path.getmtime("access_token.json")).date()
-        return token_time == datetime.now().date()
-    except:
-        return False
-
-# ✅ Fetch & validate token
-tokens = fetch_access_token()
-if tokens:
-    with open("access_token.json", "w") as f:
-        json.dump(tokens, f, indent=2)
-
+# ✅ Validate and load tokens
+tokens = fetch_tokens()
 if not tokens or not is_token_fresh():
-    st.warning("⚠️ Token not fresh. Regenerating...")
-    generate_token()
-    tokens = fetch_access_token()
-    if tokens:
-        with open("access_token.json", "w") as f:
-            json.dump(tokens, f, indent=2)
-    else:
-        st.error("❌ Token fetch failed.")
-        st.stop()
+    st.warning("⚠️ Token not fresh or missing.")
+    st.stop()
 
-# ✅ Extract token data after validation
+# ✅ Extract tokens
 access_token = tokens.get("access_token")
 api_key = tokens.get("api_key")
 client_code = tokens.get("client_code")
 
-# ✅ Display token timestamp
-try:
-    token_time = datetime.fromtimestamp(os.path.getmtime("access_token.json"))
+# ✅ Display token refresh timestamp
+token_time = get_token_timestamp()
+if token_time:
     st.sidebar.markdown(f"📅 Token refreshed: **{token_time.strftime('%Y-%m-%d %H:%M:%S')}**")
-except:
+else:
     st.sidebar.warning("⚠️ Token timestamp not available.")
 
-# ✅ Display available funds
+# ✅ Fetch and display funds
 funds = get_available_funds(access_token)
-available_funds = float(funds['data']['availablecash']) if funds.get("status") else 0
-
 if funds.get("status"):
+    available_funds = float(funds["data"]["availablecash"])
     st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
 else:
-    st.sidebar.error(funds.get("error"))
+    st.sidebar.error(f"❌ Error: {funds.get('error')}")
 
 # ✅ Load Nifty 500
 try:
