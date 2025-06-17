@@ -61,6 +61,10 @@ tokens = fetch_access_token()
 if tokens:
     with open("access_token.json", "w") as f:
         json.dump(tokens, f, indent=2)
+# Extract token info
+access_token = tokens.get("access_token") if tokens else None
+api_key = tokens.get("api_key") if tokens else None
+client_code = tokens.get("client_code") if tokens else None
 
 if not tokens or not is_token_fresh():
     st.warning("⚠️ Token not fresh. Regenerating...")
