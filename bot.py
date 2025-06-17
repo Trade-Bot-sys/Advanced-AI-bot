@@ -21,15 +21,15 @@ from ta.momentum import RSIIndicator
 from ta.trend import MACD
 #from streamlit_app import get_available_funds
 from funds import get_available_funds
-from token_utils import get_access_token
+from token_utils import fetch_access_token_from_gist
 
 # ✅ Load access token from Gist
-access_token = get_access_token()
+access_token = fetch_access_token_from_gist()
 if not access_token:
     raise Exception("❌ Failed to fetch access token. Check Gist or token_utils.py.")
 
 # ✅ Fetch available funds
-funds_data = get_available_funds(access_token)
+funds_data = get_available_funds()
 if funds_data and funds_data.get("status"):
     available_funds = float(funds_data['data'].get('availablecash', 0))
 else:
