@@ -10,13 +10,13 @@ def fetch_access_token_from_gist(gist_url):
     try:
         response = requests.get(gist_url)
         if response.status_code == 200:
-            return response.json()
-        else:
-            st.error("❌ Failed to fetch access_token.json from Gist")
-            return None
+            tokens = response.json()
+            with open("access_token.json", "w") as f:
+                json.dump(tokens, f, indent=2)
+            return tokens
     except Exception as e:
-        st.error(f"❌ Error fetching access_token.json: {e}")
-        return None
+        print("❌ Error fetching token:", e)
+    return None
 
 tokens = fetch_access_token_from_gist(GIST_RAW_URL)
 
