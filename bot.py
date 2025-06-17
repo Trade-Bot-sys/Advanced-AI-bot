@@ -22,9 +22,13 @@ from ta.trend import MACD
 #from streamlit_app import get_available_funds
 from funds import get_available_funds
 from token_utils import fetch_access_token_from_gist
+from funds import fetch_access_token_from_gist
 
-# ✅ Load access token from Gist
-access_token = fetch_access_token_from_gist(gist_url) 
+gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
+
+tokens = fetch_access_token_from_gist(gist_url)
+access_token = tokens.get("access_token")
+
 if not access_token:
     raise Exception("❌ Failed to fetch access token. Check Gist or token_utils.py.")
 
