@@ -37,7 +37,7 @@ from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
 from token_utils import fetch_tokens, is_token_fresh, get_token_timestamp
-from funds import get_available_funds
+#from funds import get_available_funds
 
 # ✅ Validate and load tokens
 tokens = fetch_tokens()
@@ -58,13 +58,16 @@ else:
     st.sidebar.warning("⚠️ Token timestamp not available.")
 
 # ✅ Fetch and display funds
+from funds import get_available_funds
+# ✅ Fetch available funds using access_token
 funds = get_available_funds(access_token)
-if funds.get("status"):
-    available_funds = float(funds["data"]["availablecash"])
+if funds and funds.get("status"):
+    available_funds = float(funds['data']['availablecash'])
     st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
 else:
-    st.sidebar.error(f"❌ Error: {funds.get('error')}")
-
+    available_funds = 0
+    st.sidebar.error(funds.get("error", "Failed to fetch funds"))
+    
 # ✅ Load Nifty 500
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
