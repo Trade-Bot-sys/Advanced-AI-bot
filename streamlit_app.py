@@ -58,14 +58,10 @@ funds_data = get_available_funds()
 
 # ✅ Check if funds fetched successfully
 if funds_data and funds_data.get("status"):
-
-    # 🟢 Extract available cash value
-    available_cash = float(funds_data["data"].get("availablecash", 0.0))
-
-    # 💰 Show on Streamlit sidebar or main panel
-    st.sidebar.metric("💰 Available Cash", f"₹ {available_cash:,.2f}")
+    available_funds = float(funds_data["data"].get("availablecash", 0.0))
+    st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
 else:
-    # 🔴 Show error if funds couldn't be fetched
+    available_funds = 0.0
     st.sidebar.error(f"Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
     
 # ✅ Load Nifty 500
