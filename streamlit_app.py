@@ -80,11 +80,15 @@ try:
 except:
     st.sidebar.warning("⚠️ Token timestamp not available.")
 
-from utils.funds import get_available_funds
+from funds import get_available_funds  # ✅ Updated import
 
-funds = get_available_funds()
+funds = get_available_funds(access_token)
 available_funds = float(funds['data']['availablecash']) if funds.get("status") else 0
-st.metric("💰 Available Cash", f"₹ {available_funds}") if funds.get("status") else st.error(funds.get("error"))
+
+if funds.get("status"):
+    st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
+else:
+    st.sidebar.error(funds.get("error"))
 
 # ✅ Load Nifty 500
 try:
