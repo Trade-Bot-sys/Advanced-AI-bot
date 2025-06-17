@@ -60,7 +60,7 @@ else:
 # ✅ Fetch and display funds
 from funds import get_available_funds
 # ✅ Fetch available funds using access_token
-funds = get_available_funds(access_token)
+funds = get_available_funds()
 if funds and funds.get("status"):
     available_funds = float(funds['data']['availablecash'])
     st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
