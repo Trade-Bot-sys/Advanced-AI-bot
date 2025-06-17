@@ -13,6 +13,9 @@ import requests
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
+st.title("📈 Smart AI Trading Dashboard - Angel One")
+
 # ✅ Load AI model
 try:
     ai_model = joblib.load("ai_model/advanced_model.pkl")
@@ -22,8 +25,6 @@ except Exception as e:
     print(f"❌ Failed to load AI model: {e}")
 
 # ✅ Streamlit page config
-st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
-st.title("📈 Smart AI Trading Dashboard - Angel One")
 
 # ✅ Imports
 from generate_access_token import generate_token
@@ -71,7 +72,7 @@ if not tokens or not is_token_fresh():
     else:
         st.error("❌ Token fetch failed.")
         st.stop()
-
+        
 # ✅ Display token refresh timestamp
 try:
     token_time = datetime.fromtimestamp(os.path.getmtime("access_token.json"))
@@ -79,31 +80,7 @@ try:
 except:
     st.sidebar.warning("⚠️ Token timestamp not available.")
 
-# ✅ Extract token data
-access_token = tokens.get("access_token")
-api_key = tokens.get("api_key")
-client_code = tokens.get("client_code")
-
-# ✅ Get funds
-def get_available_funds():
-    try:
-        conn = http.client.HTTPSConnection("apiconnect.angelone.in")
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-UserType': 'USER',
-            'X-SourceID': 'WEB',
-            'X-ClientLocalIP': os.getenv('CLIENT_LOCAL_IP'),
-            'X-ClientPublicIP': os.getenv('CLIENT_PUBLIC_IP'),
-            'X-MACAddress': os.getenv('MAC_ADDRESS'),
-            'X-PrivateKey': os.getenv('API_KEY')
-        }
-        conn.request("GET", "/rest/secure/angelbroking/user/v1/getRMS", headers=headers)
-        res = conn.getresponse()
-        return json.loads(res.read().decode("utf-8"))
-    except Exception as e:
-        return {"status": False, "error": str(e)}
+from utils.funds import get_available_funds
 
 funds = get_available_funds()
 available_funds = float(funds['data']['availablecash']) if funds.get("status") else 0
