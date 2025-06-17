@@ -4,12 +4,47 @@ import json
 import http.client
 from datetime import datetime
 
+GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
+
+def fetch_access_token_from_gist(gist_url):
+    try:
+        response = requests.get(gist_url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error("❌ Failed to fetch access_token.json from Gist")
+            return None
+    except Exception as e:
+        st.error(f"❌ Error fetching access_token.json: {e}")
+        return None
+
+tokens = fetch_access_token_from_gist(GIST_RAW_URL)
+
+if tokens:
+    with open("access_token.json", "w") as f:
+        json.dump(tokens, f, indent=2)
+
+if tokens:
+    access_token = tokens.get("access_token")
+    feed_token = tokens.get("feed_token")
+    api_key = tokens.get("api_key")
+    client_code = tokens.get("client_code")
+else:
+    st.stop()
+
+API_KEY = tokens.get("api_key")
+JWT_TOKEN = tokens.get("access_token")
+CLIENT_CODE = tokens.get("client_code")
+LOCAL_IP = os.getenv('CLIENT_LOCAL_IP')
+PUBLIC_IP = os.getenv('CLIENT_PUBLIC_IP')
+MAC_ADDRESS = os.getenv('MAC_ADDRESS')
+
 # ✅ Get funds (access_token passed from outside)
-def get_available_funds(access_token):
+def get_available_funds():
     try:
         conn = http.client.HTTPSConnection("apiconnect.angelone.in")
         headers = {
-            'Authorization': f'Bearer {access_token}',
+            'Authorization': f'Bearer {JWT_TOKEN}',
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'X-UserType': 'USER',
