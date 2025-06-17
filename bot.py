@@ -20,7 +20,7 @@ import joblib
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
 #from streamlit_app import get_available_funds
-from utils.funds import get_available_funds
+from funds import get_available_funds
 
 funds = get_available_funds()
 available_funds = float(funds['data']['availablecash']) if funds.get("status") else 0
