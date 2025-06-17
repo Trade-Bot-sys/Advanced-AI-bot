@@ -2,7 +2,7 @@
 import requests
 import json
 from datetime import datetime
-
+from utils import convert_to_ist
 gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 
 def fetch_tokens():
