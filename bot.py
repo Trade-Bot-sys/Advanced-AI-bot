@@ -48,7 +48,7 @@ MAX_HOLD_DAYS = 5
 
 # Trade tracker
 try:
-    available_funds = get_available_funds()
+    available_funds = get_available_funds(access_token)
 except:
     available_funds = 1000  # Or any safe fallback# Fetch from broker API or manually set for test
 portfolio = {}  # Store current holdings
