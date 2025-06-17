@@ -37,33 +37,36 @@ from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
 from token_utils import fetch_access_token_from_gist, is_token_fresh
-#from funds import get_available_funds
-#from funds import fetch_access_token_from_gist
+from funds import get_available_funds
 
-gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
-tokens = fetch_access_token_from_gist(gist_url) 
-access_token = tokens.get("access_token")
+#gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
+#tokens = fetch_access_token_from_gist(gist_url) 
+#access_token = tokens.get("access_token")
 # ✅ Validate and load tokens
 
-if not tokens or not is_token_fresh():
-    st.warning("⚠️ Token not fresh or missing.")
-    st.stop()
+#if not tokens or not is_token_fresh():
+    #st.warning("⚠️ Token not fresh or missing.")
+   # st.stop()
 
 # ✅ Extract tokens
-access_token = tokens.get("access_token")
-api_key = tokens.get("api_key")
-client_code = tokens.get("client_code")
+#access_token = tokens.get("access_token")
+#api_key = tokens.get("api_key")
+#client_code = tokens.get("client_code")
 
-# ✅ Fetch and display funds
-from funds import get_available_funds
-# ✅ Fetch available funds using access_token
-funds = get_available_funds()
-if funds and funds.get("status"):
-    available_funds = float(funds['data']['availablecash'])
-    st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
+# 📊 Fetch funds using Angel One API
+funds_data = get_available_funds()
+
+# ✅ Check if funds fetched successfully
+if funds_data and funds_data.get("status"):
+
+    # 🟢 Extract available cash value
+    available_cash = float(funds_data["data"].get("availablecash", 0.0))
+
+    # 💰 Show on Streamlit sidebar or main panel
+    st.sidebar.metric("💰 Available Cash", f"₹ {available_cash:,.2f}")
 else:
-    available_funds = 0
-    st.sidebar.error(funds.get("error", "Failed to fetch funds"))
+    # 🔴 Show error if funds couldn't be fetched
+    st.sidebar.error(f"Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
     
 # ✅ Load Nifty 500
 try:
