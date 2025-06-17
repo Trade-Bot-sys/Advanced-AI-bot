@@ -37,7 +37,7 @@ from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
 
-# ✅ Gist URL to fetch token
+# ✅ Gist URL for access token
 gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 
 # ✅ Token functions
@@ -56,15 +56,11 @@ def is_token_fresh():
     except:
         return False
 
-# ✅ Get and validate tokens
+# ✅ Fetch & validate token
 tokens = fetch_access_token()
 if tokens:
     with open("access_token.json", "w") as f:
         json.dump(tokens, f, indent=2)
-# Extract token info
-access_token = tokens.get("access_token") if tokens else None
-api_key = tokens.get("api_key") if tokens else None
-client_code = tokens.get("client_code") if tokens else None
 
 if not tokens or not is_token_fresh():
     st.warning("⚠️ Token not fresh. Regenerating...")
@@ -76,16 +72,20 @@ if not tokens or not is_token_fresh():
     else:
         st.error("❌ Token fetch failed.")
         st.stop()
-        
-# ✅ Display token refresh timestamp
+
+# ✅ Extract token data after validation
+access_token = tokens.get("access_token")
+api_key = tokens.get("api_key")
+client_code = tokens.get("client_code")
+
+# ✅ Display token timestamp
 try:
     token_time = datetime.fromtimestamp(os.path.getmtime("access_token.json"))
     st.sidebar.markdown(f"📅 Token refreshed: **{token_time.strftime('%Y-%m-%d %H:%M:%S')}**")
 except:
     st.sidebar.warning("⚠️ Token timestamp not available.")
 
-from funds import get_available_funds  # ✅ Updated import
-
+# ✅ Display available funds
 funds = get_available_funds(access_token)
 available_funds = float(funds['data']['availablecash']) if funds.get("status") else 0
 
