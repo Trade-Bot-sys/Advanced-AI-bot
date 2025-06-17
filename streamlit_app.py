@@ -54,13 +54,6 @@ access_token = tokens.get("access_token")
 api_key = tokens.get("api_key")
 client_code = tokens.get("client_code")
 
-# ✅ Display token refresh timestamp
-token_time = get_token_timestamp()
-if token_time:
-    st.sidebar.markdown(f"📅 Token refreshed: **{token_time.strftime('%Y-%m-%d %H:%M:%S')}**")
-else:
-    st.sidebar.warning("⚠️ Token timestamp not available.")
-
 # ✅ Fetch and display funds
 from funds import get_available_funds
 # ✅ Fetch available funds using access_token
