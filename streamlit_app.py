@@ -36,11 +36,11 @@ from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
-from token_utils import fetch_tokens, is_token_fresh, get_token_timestamp
+from token_utils import fetch_access_token_from_gist, is_token_fresh
 #from funds import get_available_funds
 
 # ✅ Validate and load tokens
-tokens = fetch_tokens()
+tokens = fetch_access_token_from_gist() 
 if not tokens or not is_token_fresh():
     st.warning("⚠️ Token not fresh or missing.")
     st.stop()
