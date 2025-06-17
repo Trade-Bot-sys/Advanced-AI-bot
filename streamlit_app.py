@@ -41,10 +41,10 @@ from token_utils import fetch_access_token_from_gist, is_token_fresh
 #from funds import fetch_access_token_from_gist
 
 gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
-
+tokens = fetch_access_token_from_gist(gist_url) 
 access_token = tokens.get("access_token")
 # ✅ Validate and load tokens
-tokens = fetch_access_token_from_gist(gist_url) 
+
 if not tokens or not is_token_fresh():
     st.warning("⚠️ Token not fresh or missing.")
     st.stop()
