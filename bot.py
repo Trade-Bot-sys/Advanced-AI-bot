@@ -19,7 +19,11 @@ import plotly.graph_objects as go
 import joblib
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
-from streamlit_app import get_available_funds
+#from streamlit_app import get_available_funds
+from utils.funds import get_available_funds
+
+funds = get_available_funds()
+available_funds = float(funds['data']['availablecash']) if funds.get("status") else 0
 
 # ✅ Load token
 with open("access_token.json") as f:
