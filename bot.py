@@ -24,7 +24,7 @@ from funds import get_available_funds
 from token_utils import fetch_access_token_from_gist
 
 # ✅ Load access token from Gist
-access_token = fetch_access_token_from_gist(gist_url)
+access_token = fetch_access_token_from_gist(GIST_URL)
 if not access_token:
     raise Exception("❌ Failed to fetch access token. Check Gist or token_utils.py.")
 
