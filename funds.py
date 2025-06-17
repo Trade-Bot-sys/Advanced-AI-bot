@@ -46,7 +46,7 @@ api_key = tokens.get("api_key")
 client_code = tokens.get("client_code")
 
 # ✅ Get funds
-def get_available_funds():
+def get_available_funds(access_token):
     try:
         conn = http.client.HTTPSConnection("apiconnect.angelone.in")
         headers = {
