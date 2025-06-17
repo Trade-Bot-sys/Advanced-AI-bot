@@ -29,8 +29,6 @@ if tokens:
     feed_token = tokens.get("feed_token")
     api_key = tokens.get("api_key")
     client_code = tokens.get("client_code")
-else:
-    st.stop()
 
 API_KEY = tokens.get("api_key")
 JWT_TOKEN = tokens.get("access_token")
