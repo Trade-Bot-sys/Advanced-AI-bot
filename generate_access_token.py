@@ -5,9 +5,10 @@ import pyotp
 import schedule
 import time
 from datetime import datetime
-import pytz
 import requests
 from utils import convert_to_ist
+from alerts import send_telegram_alert  # ✅ Make sure alerts.py is available
+
 # ---------- Gist Uploader ----------
 def update_gist_token(gist_id, github_token, new_content):
     try:
@@ -27,21 +28,21 @@ def update_gist_token(gist_id, github_token, new_content):
         response = requests.patch(url, headers=headers, json=payload)
         if response.status_code == 200:
             print("✅ Gist updated successfully.")
+            send_telegram_alert("✅ Angel One token updated in Gist successfully.")
         else:
             print(f"❌ Failed to update Gist: {response.status_code} - {response.text}")
+            send_telegram_alert(f"❌ Gist update failed: {response.status_code}")
     except Exception as e:
         print(f"❌ Exception while updating Gist: {e}")
+        send_telegram_alert(f"❌ Gist update exception: {e}")
 
 # ---------- Token Generator ----------
 def generate_token():
     try:
         print(f"[{datetime.now()}] ⏳ Starting token generation...")
 
-        api_key = "JeYhSd2A"
-        client_code = "AAAN475750"
-
-        # ✅ Fetch from ENV
-        client_code_env = os.getenv('CLIENT_CODE')
+        # ✅ Env vars (required)
+        client_code = os.getenv('CLIENT_CODE')
         password = os.getenv('CLIENT_PIN')
         totp_secret = os.getenv('TOTP_SECRET')
         apikey = os.getenv('API_KEY')
@@ -51,8 +52,9 @@ def generate_token():
         gist_id = os.getenv('GIST_ID')
         github_token = os.getenv('GITHUB_TOKEN')
 
+        # ✅ Check all
         required_keys = {
-            'CLIENT_CODE': client_code_env,
+            'CLIENT_CODE': client_code,
             'CLIENT_PIN': password,
             'TOTP_SECRET': totp_secret,
             'API_KEY': apikey,
@@ -63,16 +65,16 @@ def generate_token():
             'GITHUB_TOKEN': github_token
         }
 
-        missing_keys = [k for k, v in required_keys.items() if not v]
-        if missing_keys:
-            print(f"❌ Missing env keys: {', '.join(missing_keys)}")
+        missing = [k for k, v in required_keys.items() if not v]
+        if missing:
+            print(f"❌ Missing env keys: {', '.join(missing)}")
+            send_telegram_alert(f"❌ Missing env keys: {', '.join(missing)}")
             return
 
-        # ✅ TOTP
+        # ✅ Generate TOTP
         totp = pyotp.TOTP(totp_secret).now()
-
         payload = json.dumps({
-            "clientcode": client_code_env,
+            "clientcode": client_code,
             "password": password,
             "totp": totp,
             "state": "active"
@@ -100,6 +102,7 @@ def generate_token():
 
         if 'data' not in response_data:
             print("❌ Login failed: no 'data'")
+            send_telegram_alert("❌ Login failed: no 'data' in response")
             return
 
         access_token = response_data['data'].get('jwtToken')
@@ -107,26 +110,22 @@ def generate_token():
 
         if not all([access_token, feed_token]):
             print("❌ Missing tokens in response.")
+            send_telegram_alert("❌ Missing access_token or feed_token")
             return
 
-        # ✅ Save to local file
-        with open("access_token.json", "w") as f:
-            json.dump({
-                "feed_token": feed_token,
-                "access_token": access_token,
-                "api_key": api_key,
-                "client_code": client_code
-            }, f, indent=2)
+        # ✅ Upload directly to Gist (skip local file)
+        new_content = json.dumps({
+            "feed_token": feed_token,
+            "access_token": access_token,
+            "api_key": apikey,
+            "client_code": client_code
+        }, indent=2)
 
-        print(f"[{datetime.now()}] ✅ access_token.json saved.")
-
-        # ✅ Upload to GitHub Gist
-        with open("access_token.json", "r") as f:
-            new_content = f.read()
         update_gist_token(gist_id, github_token, new_content)
 
     except Exception as e:
         print(f"❌ Exception in generate_token(): {e}")
+        send_telegram_alert(f"❌ Exception in token generation: {e}")
 
 # ---------- Optional Scheduler ----------
 def run_scheduler():
@@ -139,4 +138,4 @@ def run_scheduler():
 # ---------- Entry Point ----------
 if __name__ == "__main__":
     generate_token()         # ✅ Run once immediately
-    run_scheduler()        # 🔁 Uncomment to run daily
+    # run_scheduler()        # 🔁 Optional schedulermment to run daily
