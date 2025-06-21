@@ -217,6 +217,24 @@ if st.button("📩 Send Daily Trade Summary"):
     send_trade_summary_email()
     st.success("✅ Daily summary email sent.")
 
+st.header("🧪 Test Telegram Alert")
+
+if st.button("📲 Send Test Alert to Telegram"):
+    try:
+        send_telegram_alert(
+            symbol="TEST",
+            action="BUY",
+            price=123.45,
+            tp=130,
+            sl=118,
+            confidence=0.92,
+            features=[55.2, 0.67, 0.03],
+            reason="Testing Telegram alert from dashboard"
+        )
+        st.success("✅ Test alert sent successfully to Telegram!")
+    except Exception as e:
+        st.error(f"❌ Failed to send alert: {e}")
+
 # ✅ Scheduler start
 schedule_daily_trade()
 st.success("✅ Smart AI Dashboard loaded with Angel One auto trading and analytics support.")
