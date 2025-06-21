@@ -12,7 +12,7 @@ from datetime import datetime
 import requests
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from alerts import send_telegram_alert, send_trade_summary_email
+from alerts import send_telegram_alert, send_trade_summary_email, send_general_telegram_message # NEW import
 from generate_access_token import generate_token
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
@@ -25,11 +25,8 @@ if 'refresh' in params:
     st.title("🔄 Angel One Token Refresh")
     try:
         generate_token()
-        send_telegram_alert("✅ Angel One token refreshed at 8:30 AM IST.")
+        send_general_telegram_message("✅ Angel One token refreshed at 8:30 AM IST.")
         st.success("✅ Token refreshed successfully via EasyCron!")
-        st.stop()  # stop rest of the app from running
-    except Exception as e:
-        st.error(f"❌ Failed to refresh token: {e}")
         st.stop()
 
 # ✅ Load AI model
