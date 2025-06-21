@@ -20,7 +20,7 @@ st.title("📈 Smart AI Trading Dashboard - Angel One")
 # ✅ Auto Token Refresh via URL (?refresh=true)
 # move to top with other imports
 
-params = st.experimental_get_query_params()
+params = st.query_params
 if 'refresh' in params:
     st.title("🔄 Angel One Token Refresh")
     try:
