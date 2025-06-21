@@ -30,13 +30,6 @@ if 'refresh' in params:
         st.stop()
 
 # ✅ Load AI model
-try:
-    ai_model = joblib.load("ai_model/advanced_model.pkl")
-    print("✅ AI model loaded successfully.")
-    
-except Exception as e:
-    ai_model = None
-    print(f"❌ Failed to load AI model: {e}")
 
 # ✅ Streamlit page config
 
@@ -52,6 +45,14 @@ from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
 from token_utils import fetch_access_token_from_gist, is_token_fresh
 from funds import get_available_funds
+
+try:
+    ai_model = joblib.load("ai_model/advanced_model.pkl")
+    print("✅ AI model loaded successfully.")
+    
+except Exception as e:
+    ai_model = None
+    print(f"❌ Failed to load AI model: {e}")
 
 #gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 #tokens = fetch_access_token_from_gist(gist_url) 
