@@ -16,6 +16,15 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 EMAIL = os.getenv("EMAIL_ADDRESS")
 EMAIL_PASS = os.getenv("EMAIL_PASSWORD")
 
+# ✅ Simple alert (generic message)
+def send_general_telegram_message(msg):
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": msg,
+        "parse_mode": "Markdown"
+    }
+    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data=payload)
+
 # ✅ Telegram Alert
 def send_telegram_alert(symbol, action, price, tp=None, sl=None, confidence=None, features=None, reason=None):
     msg = f"📢 *{action}* signal for *{symbol}* at ₹{price:.2f}"
