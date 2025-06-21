@@ -12,14 +12,31 @@ from datetime import datetime
 import requests
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
+from alerts import send_telegram_alert, send_trade_summary_email
+from generate_access_token import generate_token
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
+
+# ✅ Auto Token Refresh via URL (?refresh=true)
+# move to top with other imports
+
+params = st.experimental_get_query_params()
+if 'refresh' in params:
+    st.title("🔄 Angel One Token Refresh")
+    try:
+        generate_token()
+        send_telegram_alert("✅ Angel One token refreshed at 8:30 AM IST.")
+        st.success("✅ Token refreshed successfully via EasyCron!")
+        st.stop()  # stop rest of the app from running
+    except Exception as e:
+        st.error(f"❌ Failed to refresh token: {e}")
+        st.stop()
 
 # ✅ Load AI model
 try:
     ai_model = joblib.load("ai_model/advanced_model.pkl")
     print("✅ AI model loaded successfully.")
+    
 except Exception as e:
     ai_model = None
     print(f"❌ Failed to load AI model: {e}")
@@ -27,8 +44,8 @@ except Exception as e:
 # ✅ Streamlit page config
 
 # ✅ Imports
-from generate_access_token import generate_token
-from alerts import send_telegram_alert, send_trade_summary_email
+#from generate_access_token import generate_token
+
 from executor import get_live_price
 from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade, get_market_status
