@@ -34,7 +34,7 @@ def send_telegram_alert(symbol, action, price, tp=None, sl=None, confidence=None
         "parse_mode": "Markdown"
     }
 
-    requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", data=payload)
+    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data=payload)
 
 # ✅ Daily Summary Email
 def send_trade_summary_email(use_google_sheets=False):
