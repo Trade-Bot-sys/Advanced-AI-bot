@@ -17,19 +17,13 @@ from alerts import send_telegram_alert
 import yfinance as yf
 import plotly.graph_objects as go
 import joblib
-import base64
-import joblib
 import requests
 from io import BytesIO
-from ta.momentum import RSIIndicator
-from ta.trend import MACD
-#from streamlit_app import get_available_funds
 from funds import get_available_funds
 from token_utils import fetch_access_token_from_gist
-from funds import fetch_access_token_from_gist
 
+# ✅ Load access token
 gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
-
 tokens = fetch_access_token_from_gist(gist_url)
 access_token = tokens.get("access_token")
 
@@ -44,32 +38,36 @@ else:
     print(f"❌ Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
     available_funds = 0
 
-# ✅ Load AI model
+# ✅ Load AI model from Gist
+model = None
+try:
+    model_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
+    response = requests.get(model_url)
+    response.raise_for_status()
+    model = joblib.load(BytesIO(response.content))
+    print("✅ Model loaded from Gist.")
+except Exception as e:
+    print(f"❌ Error loading model from Gist: {e}")
 
-model = joblib.load("advanced_model.pkl")
-print("✅ Model loaded from local file")
-
-# ✅ Load Nifty500 stock list
+# ✅ Load stock list
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
     STOCK_LIST = [f"{s.strip()}.NS" for s in df_stocks["Symbol"] if isinstance(s, str)]
 except:
     STOCK_LIST = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS"]
 
-# ✅ Trade Configuration
-TAKE_PROFIT = 10  # ₹
-STOP_LOSS = 3     # ₹
-TRAIL_BUFFER = 2  # ₹
+# ✅ Trade configuration
+TAKE_PROFIT = 10
+STOP_LOSS = 3
+TRAIL_BUFFER = 2
 MAX_HOLD_DAYS = 5
 
 portfolio = {}
 
-# ✅ Market timing check
 def is_market_open():
     now = datetime.now().time()
     return time(9, 15) <= now <= time(15, 30)
 
-# ✅ Trade chart
 def plot_trade_chart(symbol, entry_price, exit_price):
     try:
         df = yf.download(symbol, period="30d", interval="1d")
@@ -88,24 +86,35 @@ def plot_trade_chart(symbol, entry_price, exit_price):
     except Exception as e:
         print(f"❌ Chart error for {symbol}: {e}")
 
-# ✅ AI model prediction
+def compute_indicators_for_prediction(df):
+    df['SMA'] = df['Close'].rolling(window=14).mean()
+    delta = df['Close'].diff()
+    gain = delta.where(delta > 0, 0).rolling(14).mean()
+    loss = -delta.where(delta < 0, 0).rolling(14).mean()
+    rs = gain / loss
+    df['RSI'] = 100 - (100 / (1 + rs))
+    exp1 = df['Close'].ewm(span=12, adjust=False).mean()
+    exp2 = df['Close'].ewm(span=26, adjust=False).mean()
+    df['MACD'] = exp1 - exp2
+    df['Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+    df.dropna(inplace=True)
+    return df
+
 def predict_signal(symbol):
+    if model is None:
+        return "HOLD"
     try:
-        df = yf.download(symbol, period="5d", interval="15m")
-        if df.empty or len(df) < 50:
+        df = yf.download(symbol, period="1mo", interval="1d", auto_adjust=True)
+        if df.empty or len(df) < 20:
             return "HOLD"
-        df['RSI'] = RSIIndicator(df['Close']).rsi()
-        df['MACD'] = MACD(df['Close']).macd()
-        df['Returns'] = df['Close'].pct_change()
-        df.dropna(inplace=True)
-        latest = df[["RSI", "MACD", "Returns"]].iloc[-1:]
+        df = compute_indicators_for_prediction(df)
+        latest = df[["SMA", "RSI", "MACD", "Signal"]].iloc[-1:]
         pred = model.predict(latest)[0]
-        return "BUY" if pred == 1 else "SELL" if pred == -1 else "HOLD"
+        return "BUY" if pred == 1 else "SELL"
     except Exception as e:
         print(f"❌ Prediction error for {symbol}: {e}")
         return "HOLD"
 
-# ✅ Trade entry logic
 def trade_logic():
     global available_funds
     if not is_market_open():
@@ -144,7 +153,6 @@ def trade_logic():
         except Exception as e:
             print(f"❌ Order error for {symbol}: {e}")
 
-# ✅ Monitor and exit logic
 def monitor_holdings():
     for symbol, info in list(portfolio.items()):
         try:
@@ -169,7 +177,7 @@ def monitor_holdings():
         except Exception as e:
             print(f"❌ Monitoring error for {symbol}: {e}")
 
-# ✅ Entry point
+# ✅ Run the bot
 if __name__ == "__main__":
     trade_logic()
     monitor_holdings()
