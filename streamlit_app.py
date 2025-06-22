@@ -50,33 +50,37 @@ from token_utils import fetch_access_token_from_gist, is_token_fresh
 from funds import get_available_funds
 from io import BytesIO
 
-# ✅ Raw Gist URL containing base64-encoded model
-GIST_MODEL_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/advanced_model_base64.txt"
+import base64
+import joblib
+import requests
+from io import BytesIO
 
-def load_model_from_gist(url):
+# ✅ RAW URL from GitHub
+GITHUB_MODEL_URL = "https://raw.githubusercontent.com/Trade-Bot-sys/Advanced-AI-bot/main/advanced_model_base64.txt"
+
+def load_model_from_github_base64(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
             b64_data = response.text.strip()
             binary_model = base64.b64decode(b64_data)
             model = joblib.load(BytesIO(binary_model))
-            print("✅ Model loaded successfully from Gist")
+            print("✅ Model loaded from GitHub base64")
             return model
         else:
-            print(f"❌ Failed to fetch model: {response.status_code}")
-            return None
+            print(f"❌ GitHub fetch failed with status: {response.status_code}")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        return None
+        print(f"❌ Error loading model from GitHub: {e}")
+    return None
 
-# 🧠 Load AI model from Gist
-ai_model = load_model_from_gist(GIST_MODEL_URL)
+# 🧠 Load the AI model
+ai_model = load_model_from_github_base64(GITHUB_MODEL_URL)
 
-# ✅ Show status in Streamlit
+# Streamlit check
 if ai_model:
-    st.success("✅ AI model loaded from Gist")
+    st.success("✅ AI model loaded from GitHub base64 file")
 else:
-    st.error("❌ Failed to load AI model from Gist")
+    st.error("❌ Failed to load AI model from GitHub")
 
 #gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 #tokens = fetch_access_token_from_gist(gist_url) 
