@@ -51,6 +51,14 @@ def compute_rsi(series, period=14):
 
     return rsi
 
+def compute_indicators(df):
+    df["Return"] = df["Close"].pct_change()
+    df["MA10"] = df["Close"].rolling(window=10).mean()
+    df["MA20"] = df["Close"].rolling(window=20).mean()
+    df["RSI"] = compute_rsi(df["Close"], 14)
+    df.dropna(inplace=True)
+    return df
+    
 # ✅ Compute technical indicators used in model or backtest
 def run_backtest(df, model):
     if isinstance(df, str):
