@@ -17,6 +17,10 @@ from alerts import send_telegram_alert
 import yfinance as yf
 import plotly.graph_objects as go
 import joblib
+import base64
+import joblib
+import requests
+from io import BytesIO
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
 #from streamlit_app import get_available_funds
@@ -41,7 +45,27 @@ else:
     available_funds = 0
 
 # ✅ Load AI model
-model = joblib.load("ai_model/advanced_model.pkl")
+
+# GitHub raw URL where your base64-encoded model is stored
+MODEL_URL = "https://raw.githubusercontent.com/Trade-Bot-sys/Advanced-AI-bot/main/advanced_model_base64.txt"
+
+def load_model_from_github_base64(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            b64_data = response.text.strip()
+            binary_model = base64.b64decode(b64_data)
+            model = joblib.load(BytesIO(binary_model))
+            print("✅ AI model loaded from GitHub.")
+            return model
+        else:
+            print(f"❌ Failed to fetch model: HTTP {response.status_code}")
+    except Exception as e:
+        print(f"❌ Error decoding model: {e}")
+    return None
+
+# Load the model
+model = load_model_from_github_base64(MODEL_URL)
 
 # ✅ Load Nifty500 stock list
 try:
