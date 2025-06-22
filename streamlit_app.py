@@ -15,7 +15,7 @@ from generate_access_token import generate_token
 from executor import get_live_price
 from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade, get_market_status
-from helpers import load_holdings, save_holdings, run_backtest, compute_indicators
+from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
 from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
