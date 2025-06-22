@@ -47,15 +47,26 @@ if 'refresh' in params:
 #from io import BytesIO
 #import streamlit as st
 
-MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
+# Your Gist URL (with base64-encoded model as .txt)
+MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.txt"
 
-@st.cache_resource(show_spinner="🔄 Loading AI model...")
+@st.cache_resource(show_spinner="🔄 Loading AI model from Gist...")
 def load_model_from_gist():
-    response = requests.get(MODEL_GIST_URL, timeout=30)
-    response.raise_for_status()
-    model = joblib.load(BytesIO(response.content))
-    return model
+    try:
+        response = requests.get(MODEL_GIST_URL, timeout=30)
+        response.raise_for_status()
+        
+        # 🧠 Decode base64 text from Gist
+        base64_str = response.text.strip()
+        model_bytes = BytesIO(base64.b64decode(base64_str))
+        
+        # ✅ Load model using joblib
+        model = joblib.load(model_bytes)
+        return model
+    except Exception as e:
+        raise RuntimeError(f"Failed to load model: {e}")
 
+# Load and display status
 try:
     ai_model = load_model_from_gist()
     st.sidebar.success("✅ AI Model loaded from Gist")
