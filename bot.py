@@ -41,7 +41,7 @@ else:
 # ✅ Load AI model from Gist (base64 .txt version)
 model = None
 try:
-    model_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.txt"
+    model_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model_b64.txt"
     
     print("📥 Downloading model from Gist...")
     response = requests.get(model_url)
