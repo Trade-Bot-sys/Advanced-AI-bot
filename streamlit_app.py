@@ -195,6 +195,7 @@ for symbol, data in holdings.copy().items():
 # ✅ Backtest
 st.header("🧪 Backtest AI Strategy")
 backtest_stock = st.selectbox("📉 Select Stock for Backtest", STOCK_LIST)
+
 if st.button("Run Backtest"):
     if ai_model is None:
         st.error("❌ AI Model not loaded.")
@@ -202,16 +203,24 @@ if st.button("Run Backtest"):
         try:
             df = yf.download(backtest_stock, period="6mo", interval="1d")
             if df.empty:
-                st.warning("No data found for selected stock.")
+                st.warning("⚠️ No data found for selected stock.")
             else:
-                df = run_backtest(df)
-                X = df[["SMA", "RSI", "MACD", "Signal"]]
-                y_pred = ai_model.predict(X)
-                df["Predicted"] = y_pred
-                st.success(f"Backtest completed for {backtest_stock}")
-                st.line_chart(df[["Close"]])
+                result = run_backtest(df, ai_model)  # Pass model here
+                st.success(f"✅ Backtest completed for {backtest_stock}")
+
+                st.subheader("📊 Equity Curve")
+                st.line_chart(result["equity"])
+
+                st.subheader("📈 Performance Metrics")
+                st.metric("Accuracy", f"{result['accuracy']:.2%}")
+                st.metric("Total Return", f"{result['return']:.2%}")
+                st.metric("Win Rate", f"{result['win_rate']:.2%}")
+
+                st.subheader("🔍 Backtest Preview")
+                st.dataframe(result["df"].tail(10))
         except Exception as e:
             st.error(f"❌ Backtest error: {e}")
+
 
 # ✅ Summary email
 if st.button("📩 Send Daily Trade Summary"):
