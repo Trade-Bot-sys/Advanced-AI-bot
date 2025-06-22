@@ -7,18 +7,27 @@ import yfinance as yf
 import plotly.graph_objects as go
 import base64
 import joblib
-import http.client
-from datetime import datetime
 import requests
+from datetime import datetime
+from io import BytesIO
+from alerts import send_telegram_alert, send_trade_summary_email, send_general_telegram_message
+from generate_access_token import generate_token
+from executor import get_live_price
+from strategies import get_final_signal, should_exit_trade
+from scheduler import schedule_daily_trade, get_market_status
+from helpers import load_holdings, save_holdings, run_backtest, compute_indicators
+from manual_trade import manual_trade_ui
+from angel_api import place_order, cancel_order, get_ltp, get_trade_book
+from utils import convert_to_ist
+from token_utils import fetch_access_token_from_gist, is_token_fresh
+from funds import get_available_funds
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from alerts import send_telegram_alert, send_trade_summary_email, send_general_telegram_message  # ✅ Import from alerts.py
-from generate_access_token import generate_token
 
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
 
-# ✅ Auto Token Refresh via URL (?refresh=true)
+# ✅ Auto Token Refresh via URL
 params = st.query_params
 if 'refresh' in params:
     st.title("🔄 Angel One Token Refresh")
@@ -32,61 +41,26 @@ if 'refresh' in params:
         st.error(f"❌ Failed to refresh token: {e}")
         st.stop()
 
-# ✅ Load AI model
-
-# ✅ Streamlit page config
-
-# ✅ Imports
-#from generate_access_token import generate_token
-
-from executor import get_live_price
-from strategies import get_final_signal, should_exit_trade
-from scheduler import schedule_daily_trade, get_market_status
-from helpers import load_holdings, save_holdings, run_backtest
-from manual_trade import manual_trade_ui
-from angel_api import place_order, cancel_order, get_ltp, get_trade_book
-from utils import convert_to_ist
-from token_utils import fetch_access_token_from_gist, is_token_fresh
-from funds import get_available_funds
-from io import BytesIO
-
-import base64
-import joblib
-import requests
-from io import BytesIO
-
-# ✅ RAW URL from GitHub
+# ✅ Load AI model from Gist
+model_gist_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
 try:
-    ai_model = joblib.load("advanced_model.pkl")
-    st.success("✅ AI model loaded from local file")
+    response = requests.get(model_gist_url)
+    response.raise_for_status()
+    ai_model = joblib.load(BytesIO(response.content))
+    st.sidebar.success("🤖 AI Model: Loaded from Gist")
 except Exception as e:
-    st.error(f"❌ Failed to load AI model from local file: {e}")
-
-#gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
-#tokens = fetch_access_token_from_gist(gist_url) 
-#access_token = tokens.get("access_token")
-# ✅ Validate and load tokens
-
-#if not tokens or not is_token_fresh():
-    #st.warning("⚠️ Token not fresh or missing.")
-   # st.stop()
-
-# ✅ Extract tokens
-#access_token = tokens.get("access_token")
-#api_key = tokens.get("api_key")
-#client_code = tokens.get("client_code")
+    ai_model = None
+    st.sidebar.error(f"⚠️ Model load failed: {e}")
 
 # 📊 Fetch funds using Angel One API
 funds_data = get_available_funds()
-
-# ✅ Check if funds fetched successfully
 if funds_data and funds_data.get("status"):
     available_funds = float(funds_data["data"].get("availablecash", 0.0))
     st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
 else:
     available_funds = 0.0
     st.sidebar.error(f"Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
-    
+
 # ✅ Load Nifty 500
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
@@ -208,13 +182,12 @@ if st.button("Run Backtest"):
             if df.empty:
                 st.warning("No data found for selected stock.")
             else:
-                result = run_backtest(df, ai_model)
-                if result:
-                    st.success(f"Backtest completed for {backtest_stock}")
-                    st.metric("📈 Accuracy", f"{result['accuracy']*100:.2f}%")
-                    st.metric("💰 Total Return", f"{result['return']*100:.2f}%")
-                    st.metric("✅ Win Rate", f"{result['win_rate']*100:.2f}%")
-                    st.line_chart(result["equity"])
+                df = compute_indicators(df)
+                X = df[["SMA", "RSI", "MACD", "Signal"]]
+                y_pred = ai_model.predict(X)
+                df["Predicted"] = y_pred
+                st.success(f"Backtest completed for {backtest_stock}")
+                st.line_chart(df[["Close"]])
         except Exception as e:
             st.error(f"❌ Backtest error: {e}")
 
@@ -224,7 +197,6 @@ if st.button("📩 Send Daily Trade Summary"):
     st.success("✅ Daily summary email sent.")
 
 st.header("🧪 Test Telegram Alert")
-
 if st.button("📲 Send Test Alert to Telegram"):
     try:
         send_telegram_alert(
