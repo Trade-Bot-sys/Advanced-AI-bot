@@ -8,20 +8,19 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils import convert_to_ist
-# === Load AI Model (Without Scaler) ===
-MODEL_PATH = "ai_model/advanced_model.pkl"
 
+# === Load AI Model (From Gist) ===
+import joblib
+from token_utils import fetch_model_from_gist
+
+MODEL_GIST_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
 model = None
 ai_enabled = False
 
 try:
-    if os.path.exists(MODEL_PATH):
-        with open(MODEL_PATH, "rb") as f:
-            model = pickle.load(f)
-        ai_enabled = True
-        print("✅ AI model loaded.")
-    else:
-        raise FileNotFoundError("advanced_model.pkl not found.")
+    model = fetch_model_from_gist(MODEL_GIST_URL)
+    ai_enabled = True
+    print("✅ AI model loaded from Gist.")
 except Exception as e:
     print(f"⚠️ AI model load failed: {e}. Fallback to rule-based strategies.")
 
@@ -149,7 +148,7 @@ def should_exit_trade(symbol: str, entry_price: float, buy_time: datetime,
         if df_now.empty or "Close" not in df_now.columns:
             raise ValueError("No intraday data available")
 
-        current_price = df_now["Close"][-1]
+        current_price = df_now["Close"].iloc[-1]
         days_held = (datetime.now() - buy_time).days
         profit = current_price - entry_price
 
