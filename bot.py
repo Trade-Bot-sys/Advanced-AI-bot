@@ -38,13 +38,20 @@ else:
     print(f"❌ Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
     available_funds = 0
 
-# ✅ Load AI model from Gist
+# ✅ Load AI model from Gist (base64 .txt version)
 model = None
 try:
-    model_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
+    model_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.txt"
+    
+    print("📥 Downloading model from Gist...")
     response = requests.get(model_url)
     response.raise_for_status()
-    model = joblib.load(BytesIO(response.content))
+    
+    print("🧠 Decoding and loading model...")
+    model_b64 = response.text.strip()
+    model_bytes = base64.b64decode(model_b64)
+    model = joblib.load(BytesIO(model_bytes))
+    
     print("✅ Model loaded from Gist.")
 except Exception as e:
     print(f"❌ Error loading model from Gist: {e}")
