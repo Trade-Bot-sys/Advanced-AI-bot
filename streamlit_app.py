@@ -42,15 +42,26 @@ if 'refresh' in params:
         st.stop()
 
 # ✅ Load AI model from Gist
-model_gist_url = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
-try:
-    response = requests.get(model_gist_url)
+#import requests
+#import joblib
+#from io import BytesIO
+#import streamlit as st
+
+MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
+
+@st.cache_resource(show_spinner="🔄 Loading AI model...")
+def load_model_from_gist():
+    response = requests.get(MODEL_GIST_URL, timeout=30)
     response.raise_for_status()
-    ai_model = joblib.load(BytesIO(response.content))
-    st.sidebar.success("🤖 AI Model: Loaded from Gist")
+    model = joblib.load(BytesIO(response.content))
+    return model
+
+try:
+    ai_model = load_model_from_gist()
+    st.sidebar.success("✅ AI Model loaded from Gist")
 except Exception as e:
     ai_model = None
-    st.sidebar.error(f"⚠️ Model load failed: {e}")
+    st.sidebar.error(f"❌ Failed to load model: {e}")
 
 # 📊 Fetch funds using Angel One API
 funds_data = get_available_funds()
