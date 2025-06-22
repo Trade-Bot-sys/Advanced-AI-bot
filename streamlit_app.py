@@ -203,21 +203,18 @@ if st.button("Run Backtest"):
         try:
             df = yf.download(backtest_stock, period="6mo", interval="1d")
             if df.empty:
-                st.warning("⚠️ No data found for selected stock.")
+                st.warning("No data found for selected stock.")
             else:
-                result = run_backtest(df, ai_model)  # Pass model here
+                result = run_backtest(df, ai_model)
                 st.success(f"✅ Backtest completed for {backtest_stock}")
 
                 st.subheader("📊 Equity Curve")
-                st.line_chart(result["equity"])
+                st.line_chart(result["df"][["Equity Curve"]])
 
-                st.subheader("📈 Performance Metrics")
+                st.subheader("📈 Stats")
                 st.metric("Accuracy", f"{result['accuracy']:.2%}")
-                st.metric("Total Return", f"{result['return']:.2%}")
+                st.metric("Return", f"{result['return']:.2%}")
                 st.metric("Win Rate", f"{result['win_rate']:.2%}")
-
-                st.subheader("🔍 Backtest Preview")
-                st.dataframe(result["df"].tail(10))
         except Exception as e:
             st.error(f"❌ Backtest error: {e}")
 
