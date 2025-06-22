@@ -23,8 +23,15 @@ def send_general_telegram_message(msg):
         "text": msg,
         "parse_mode": "Markdown"
     }
-    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data=payload)
-
+    try:
+        response = requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data=payload)
+        if response.status_code == 200:
+            print("✅ Telegram alert sent.")
+        else:
+            print(f"❌ Telegram alert failed: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Error sending Telegram alert: {e}")
+        
 # ✅ Telegram Alert
 def send_telegram_alert(symbol, action, price, tp=None, sl=None, confidence=None, features=None, reason=None):
     msg = f"📢 *{action}* signal for *{symbol}* at ₹{price:.2f}"
