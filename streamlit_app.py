@@ -48,7 +48,7 @@ if 'refresh' in params:
 #import streamlit as st
 
 # Your Gist URL (with base64-encoded model as .txt)
-MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.txt"
+MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model_b64.txt"
 
 @st.cache_resource(show_spinner="🔄 Loading AI model from Gist...")
 def load_model_from_gist():
