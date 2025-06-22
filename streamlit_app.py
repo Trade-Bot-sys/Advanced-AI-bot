@@ -48,14 +48,34 @@ from angel_api import place_order, cancel_order, get_ltp, get_trade_book
 from utils import convert_to_ist
 from token_utils import fetch_access_token_from_gist, is_token_fresh
 from funds import get_available_funds
+from io import BytesIO
+GIST_ID = "c4a038ffd89d3f8b13f3f26fb73f8181"
+MODEL_FILENAME = "profitable_stock_model.h5"
+def load_model_from_gist_in_memory(gist_id, filename):
+    url = f"https://gist.githubusercontent.com/Trade-Bot-sys/{gist_id}/raw/{filename}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            model_data = base64.b64decode(response.text)
+            buffer = BytesIO(model_data)
+            model = joblib.load(buffer)
+            print("✅ AI model loaded from Gist (in-memory)")
+            return model
+        else:
+            print(f"❌ Gist fetch failed: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Model load error: {e}")
+    return None
 
-try:
-    ai_model = joblib.load("ai_model/advanced_model.pkl")
-    print("✅ AI model loaded successfully.")
-    
-except Exception as e:
-    ai_model = None
-    print(f"❌ Failed to load AI model: {e}")
+
+# ✅ Load AI model directly from Gist in memory
+
+
+ai_model = load_model_from_gist_in_memory(GIST_ID, MODEL_FILENAME)
+if ai_model:
+    st.success("✅ AI model loaded from Gist")
+else:
+    st.error("❌ Failed to load AI model from Gist")
 
 #gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 #tokens = fetch_access_token_from_gist(gist_url) 
