@@ -51,20 +51,14 @@ def compute_rsi(series, period=14):
 
     return rsi
 
-# ✅ AI Model Backtest
+# ✅ Compute technical indicators used in model or backtest
 def run_backtest(df, model):
     if isinstance(df, str):
         raise ValueError("❌ Expected DataFrame, got string instead.")
 
     df = df.copy()
-    df.dropna(inplace=True)
-
-    df["Return"] = df["Close"].pct_change()
-    df["MA10"] = df["Close"].rolling(window=10).mean()
-    df["MA20"] = df["Close"].rolling(window=20).mean()
-    df["RSI"] = compute_rsi(df["Close"], 14)
+    df = compute_indicators(df)
     df["Target"] = np.where(df["Return"].shift(-1) > 0, 1, 0)
-
     df.dropna(inplace=True)
 
     features = ["MA10", "MA20", "RSI"]
