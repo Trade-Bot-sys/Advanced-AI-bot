@@ -56,31 +56,11 @@ import requests
 from io import BytesIO
 
 # ✅ RAW URL from GitHub
-GITHUB_MODEL_URL = "https://raw.githubusercontent.com/Trade-Bot-sys/Advanced-AI-bot/main/advanced_model_base64.txt"
-
-def load_model_from_github_base64(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            b64_data = response.text.strip()
-            binary_model = base64.b64decode(b64_data)
-            model = joblib.load(BytesIO(binary_model))
-            print("✅ Model loaded from GitHub base64")
-            return model
-        else:
-            print(f"❌ GitHub fetch failed with status: {response.status_code}")
-    except Exception as e:
-        print(f"❌ Error loading model from GitHub: {e}")
-    return None
-
-# 🧠 Load the AI model
-ai_model = load_model_from_github_base64(GITHUB_MODEL_URL)
-
-# Streamlit check
-if ai_model:
-    st.success("✅ AI model loaded from GitHub base64 file")
-else:
-    st.error("❌ Failed to load AI model from GitHub")
+try:
+    ai_model = joblib.load("advanced_model.pkl")
+    st.success("✅ AI model loaded from local file")
+except Exception as e:
+    st.error(f"❌ Failed to load AI model from local file: {e}")
 
 #gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
 #tokens = fetch_access_token_from_gist(gist_url) 
