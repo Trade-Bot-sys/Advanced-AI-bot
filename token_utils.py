@@ -11,7 +11,7 @@ from generate_access_token import generate_token
 
 # === Gist URLs ===
 GIST_RAW_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
-MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.txt"
+MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model_b64.txt"
 
 # ✅ 1. Fetch access token from Gist
 def fetch_access_token_from_gist(gist_url):
