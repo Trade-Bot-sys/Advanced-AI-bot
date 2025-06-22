@@ -13,7 +13,7 @@ from utils import convert_to_ist
 import joblib
 from token_utils import fetch_model_from_gist
 
-MODEL_GIST_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
+MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.txt"
 model = None
 ai_enabled = False
 
