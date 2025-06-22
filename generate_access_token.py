@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 import requests
 from utils import convert_to_ist
-from alerts import send_telegram_alert  # ✅ Make sure alerts.py is available
+from alerts import send_telegram_alert, send_general_telegram_message # ✅ Make sure alerts.py is available
 
 # ---------- Gist Uploader ----------
 def update_gist_token(gist_id, github_token, new_content):
@@ -28,13 +28,13 @@ def update_gist_token(gist_id, github_token, new_content):
         response = requests.patch(url, headers=headers, json=payload)
         if response.status_code == 200:
             print("✅ Gist updated successfully.")
-            send_telegram_alert("✅ Angel One token updated in Gist successfully.")
+            send_general_telegram_message("✅ Angel One token updated in Gist successfully.")
         else:
             print(f"❌ Failed to update Gist: {response.status_code} - {response.text}")
-            send_telegram_alert(f"❌ Gist update failed: {response.status_code}")
+            send_general_telegram_message(f"❌ Gist update failed: {response.status_code}")
     except Exception as e:
         print(f"❌ Exception while updating Gist: {e}")
-        send_telegram_alert(f"❌ Gist update exception: {e}")
+        send_general_telegram_message(f"❌ Gist update exception: {e}")
 
 # ---------- Token Generator ----------
 def generate_token():
@@ -68,7 +68,7 @@ def generate_token():
         missing = [k for k, v in required_keys.items() if not v]
         if missing:
             print(f"❌ Missing env keys: {', '.join(missing)}")
-            send_telegram_alert(f"❌ Missing env keys: {', '.join(missing)}")
+            send_general_telegram_message(f"❌ Missing env keys: {', '.join(missing)}")
             return
 
         # ✅ Generate TOTP
@@ -102,7 +102,7 @@ def generate_token():
 
         if 'data' not in response_data:
             print("❌ Login failed: no 'data'")
-            send_telegram_alert("❌ Login failed: no 'data' in response")
+            send_general_telegram_message("❌ Login failed: no 'data' in response")
             return
 
         access_token = response_data['data'].get('jwtToken')
@@ -110,7 +110,7 @@ def generate_token():
 
         if not all([access_token, feed_token]):
             print("❌ Missing tokens in response.")
-            send_telegram_alert("❌ Missing access_token or feed_token")
+            send_general_telegram_message("❌ Missing access_token or feed_token")
             return
 
         # ✅ Upload directly to Gist (skip local file)
@@ -125,7 +125,7 @@ def generate_token():
 
     except Exception as e:
         print(f"❌ Exception in generate_token(): {e}")
-        send_telegram_alert(f"❌ Exception in token generation: {e}")
+        send_general_telegram_message(f"❌ Exception in token generation: {e}")
 
 # ---------- Optional Scheduler ----------
 def run_scheduler():
