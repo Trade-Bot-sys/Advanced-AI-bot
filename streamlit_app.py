@@ -50,26 +50,29 @@ from token_utils import fetch_access_token_from_gist, is_token_fresh
 from funds import get_available_funds
 from io import BytesIO
 
-# ✅ Your Gist URL (binary model)
-MODEL_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/6dc23fb23c17ffeb7e1697e765579ed119d49130/profitable_stock_model.h5"
+# ✅ Raw Gist URL containing base64-encoded model
+GIST_MODEL_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/advanced_model_base64.txt"
 
-def load_model_from_binary_gist(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        model = joblib.load(BytesIO(response.content))
-        print("✅ Model loaded successfully from binary Gist")
-        return model
-    else:
-        raise Exception(f"❌ Failed to fetch model: {response.status_code}")
+def load_model_from_gist(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            b64_data = response.text.strip()
+            binary_model = base64.b64decode(b64_data)
+            model = joblib.load(BytesIO(binary_model))
+            print("✅ Model loaded successfully from Gist")
+            return model
+        else:
+            print(f"❌ Failed to fetch model: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"❌ Error loading model: {e}")
+        return None
 
-# 🧠 Load your AI model
-ai_model = load_model_from_binary_gist(MODEL_URL)
+# 🧠 Load AI model from Gist
+ai_model = load_model_from_gist(GIST_MODEL_URL)
 
-
-# ✅ Load AI model directly from Gist in memory
-
-
-ai_model = load_model_from_gist_in_memory(GIST_ID, MODEL_FILENAME)
+# ✅ Show status in Streamlit
 if ai_model:
     st.success("✅ AI model loaded from Gist")
 else:
