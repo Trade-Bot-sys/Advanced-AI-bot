@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 from utils import convert_to_ist
+from google_sheets import update_holdings_sheet, log_trade_to_sheet
+
 HOLDINGS_FILE = "holdings.json"
 TRADE_LOG_FILE = "trade_log.csv"
 
@@ -19,11 +21,10 @@ def load_holdings():
         return {}
 
 # ✅ Save Holdings
-from google_sheets import update_holdings_sheet, log_trade_to_sheet
-
 def save_holdings(data):
     update_holdings_sheet(data)  # Push to Google Sheets
 
+# ✅ Log Exit Trade to Google Sheet
 def log_exit_trade(symbol, exit_price, reason, exit_time):
     row = [exit_time, symbol, "SELL", 1, exit_price, reason, "", ""]
     log_trade_to_sheet(row)  # Append to Google Sheets
