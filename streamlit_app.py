@@ -204,7 +204,7 @@ if st.button("Run Backtest"):
             if df.empty:
                 st.warning("No data found for selected stock.")
             else:
-                df = compute_indicators(df)
+                df = run_backtest(df)
                 X = df[["SMA", "RSI", "MACD", "Signal"]]
                 y_pred = ai_model.predict(X)
                 df["Predicted"] = y_pred
