@@ -23,6 +23,7 @@ from token_utils import fetch_access_token_from_gist, is_token_fresh
 from funds import get_available_funds
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import time
 
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
@@ -42,12 +43,6 @@ if 'refresh' in params:
         st.stop()
 
 # ✅ Load AI model from Gist
-#import requests
-#import joblib
-#from io import BytesIO
-#import streamlit as st
-
-# Your Gist URL (with base64-encoded model as .txt)
 MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model_b64.txt"
 
 @st.cache_resource(show_spinner="🔄 Loading AI model from Gist...")
@@ -55,18 +50,13 @@ def load_model_from_gist():
     try:
         response = requests.get(MODEL_GIST_URL, timeout=30)
         response.raise_for_status()
-        
-        # 🧠 Decode base64 text from Gist
         base64_str = response.text.strip()
         model_bytes = BytesIO(base64.b64decode(base64_str))
-        
-        # ✅ Load model using joblib
         model = joblib.load(model_bytes)
         return model
     except Exception as e:
         raise RuntimeError(f"Failed to load model: {e}")
 
-# Load and display status
 try:
     ai_model = load_model_from_gist()
     st.sidebar.success("✅ AI Model loaded from Gist")
@@ -145,21 +135,23 @@ bot_stock = st.sidebar.selectbox("View Traded Stock", bot_symbols)
 
 if bot_stock:
     st.subheader(f"📊 Live Chart: {bot_stock}")
-    chart_df = yf.download(bot_stock, period="7d", interval="15m")
-    fig = go.Figure()
-    fig.add_trace(go.Candlestick(
-        x=chart_df.index, open=chart_df["Open"], high=chart_df["High"],
-        low=chart_df["Low"], close=chart_df["Close"], name="Candles"))
-    trades = df_trades[df_trades["symbol"] == bot_stock]
-    for _, row in trades.iterrows():
-        fig.add_trace(go.Scatter(
-            x=[row["timestamp"]], y=[row["entry"]], mode="markers+text", name=row["action"],
-            text=row["action"], textposition="top center",
-            marker=dict(size=10, color="green" if row["action"] == "BUY" else "red")
-        ))
-    st.plotly_chart(fig, use_container_width=True)
+    placeholder = st.empty()
+    for _ in range(30):
+        chart_df = yf.download(bot_stock, period="7d", interval="15m")
+        fig = go.Figure()
+        fig.add_trace(go.Candlestick(
+            x=chart_df.index, open=chart_df["Open"], high=chart_df["High"],
+            low=chart_df["Low"], close=chart_df["Close"], name="Candles"))
+        trades = df_trades[df_trades["symbol"] == bot_stock]
+        for _, row in trades.iterrows():
+            fig.add_trace(go.Scatter(
+                x=[row["timestamp"]], y=[row["entry"]], mode="markers+text", name=row["action"],
+                text=row["action"], textposition="top center",
+                marker=dict(size=10, color="green" if row["action"] == "BUY" else "red")
+            ))
+        placeholder.plotly_chart(fig, use_container_width=True)
+        time.sleep(30)
 
-    # Show prediction
     if not trades.empty:
         latest_trade = trades.sort_values("timestamp", ascending=False).iloc[0]
         st.markdown("### 🧠 AI Prediction Details")
@@ -207,17 +199,14 @@ if st.button("Run Backtest"):
             else:
                 result = run_backtest(df, ai_model)
                 st.success(f"✅ Backtest completed for {backtest_stock}")
-
                 st.subheader("📊 Equity Curve")
-                st.line_chart(result["df"][["Equity Curve"]])
-
+                st.line_chart(result["df"]["Equity Curve"])
                 st.subheader("📈 Stats")
                 st.metric("Accuracy", f"{result['accuracy']:.2%}")
                 st.metric("Return", f"{result['return']:.2%}")
                 st.metric("Win Rate", f"{result['win_rate']:.2%}")
         except Exception as e:
             st.error(f"❌ Backtest error: {e}")
-
 
 # ✅ Summary email
 if st.button("📩 Send Daily Trade Summary"):
