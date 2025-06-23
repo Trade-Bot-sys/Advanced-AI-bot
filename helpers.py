@@ -60,33 +60,30 @@ def compute_indicators(df):
     return df
     
 # ✅ Compute technical indicators used in model or backtest
-def run_backtest(df, model):
-    if isinstance(df, str):
-        raise ValueError("❌ Expected DataFrame, got string instead.")
+#import pandas as pd
 
+def run_backtest(df, model):
     df = df.copy()
-    df = compute_indicators(df)
-    df["Target"] = np.where(df["Return"].shift(-1) > 0, 1, 0)
+    df["Return"] = df["Close"].pct_change()
+    df["MA10"] = df["Close"].rolling(10).mean()
+    df["MA20"] = df["Close"].rolling(20).mean()
+    df["RSI"] = compute_rsi(df["Close"].values, 14)
     df.dropna(inplace=True)
 
     features = ["MA10", "MA20", "RSI"]
     X = df[features]
-    y = df["Target"]
+    y = df["Return"].shift(-1) > 0  # Future return direction
 
-    y_pred = model.predict(X)
-
-    df["Signal"] = y_pred
-    df["Strategy Return"] = df["Return"] * df["Signal"]
+    df["Prediction"] = model.predict(X)
+    df["Signal"] = df["Prediction"].map({1: 1, 0: -1})
+    df["Strategy Return"] = df["Signal"] * df["Return"]
     df["Equity Curve"] = (1 + df["Strategy Return"]).cumprod()
 
-    accuracy = accuracy_score(y, y_pred)
+    accuracy = (df["Prediction"] == y).mean()
     total_return = df["Equity Curve"].iloc[-1] - 1
-    win_rate = sum((df["Signal"] == 1) & (df["Return"] > 0)) / max(sum(df["Signal"] == 1), 1)
 
     return {
-        "equity": df[["Equity Curve"]],
         "df": df,
         "accuracy": accuracy,
-        "return": total_return,
-        "win_rate": win_rate
+        "return": total_return
     }
