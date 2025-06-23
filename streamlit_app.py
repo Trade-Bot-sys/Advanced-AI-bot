@@ -1,4 +1,4 @@
-# ai_trading_dashboard.py
+# streamlit_app.py (Smart AI Dashboard with Nifty 35, WebSocket & AI Trades)
 import os
 import json
 import pandas as pd
@@ -7,22 +7,21 @@ import plotly.graph_objects as go
 import base64
 import joblib
 import requests
-from datetime import datetime
-from io import BytesIO
 import asyncio
 import websockets
 import threading
-import time
+from datetime import datetime
+from io import BytesIO
 from alerts import send_telegram_alert, send_trade_summary_email, send_general_telegram_message
 from generate_access_token import generate_token
-from executor import get_live_price, place_order
+from executor import place_order, get_live_price
 from strategies import get_final_signal, should_exit_trade
-from scheduler import schedule_daily_trade, get_market_status
+from scheduler import schedule_daily_trade
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
-from angel_api import get_ltp, get_trade_book
+from angel_api import get_ltp
 from utils import convert_to_ist
-from token_utils import fetch_access_token_from_gist, is_token_fresh
+from token_utils import is_token_fresh
 from funds import get_available_funds
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -70,79 +69,22 @@ if funds_data and funds_data.get("status"):
     st.sidebar.metric("💰 Available Cash", f"₹ {available_funds:,.2f}")
 else:
     available_funds = 0.0
-    st.sidebar.error(f"Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
+    st.sidebar.error("❌ Failed to fetch funds")
 
-STOCK_LIST = []
-try:
-    df_stocks = pd.read_csv("nifty500list.csv")
-    STOCK_LIST = [f"{s.strip()}.NS" for s in df_stocks["Symbol"] if isinstance(s, str)]
-except:
-    STOCK_LIST = ["RELIANCE.NS", "TCS.NS"]
+NIFTY_35 = [
+    "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "LT", "SBIN", "KOTAKBANK",
+    "AXISBANK", "HINDUNILVR", "ITC", "BHARTIARTL", "BAJFINANCE", "ASIANPAINT",
+    "MARUTI", "HCLTECH", "WIPRO", "ULTRACEMCO", "TECHM", "NTPC", "TITAN",
+    "POWERGRID", "JSWSTEEL", "SUNPHARMA", "ADANIENT", "ADANIPORTS", "DIVISLAB",
+    "CIPLA", "ONGC", "GRASIM", "BPCL", "EICHERMOT", "COALINDIA", "HDFCLIFE"
+]
+STOCK_LIST = [f"{s}.NS" for s in NIFTY_35]
 
 st.sidebar.header("⚙️ Trade Settings")
 def_tp = st.sidebar.number_input("Take Profit (₹)", value=10.0)
 def_sl = st.sidebar.number_input("Stop Loss (₹)", value=5.0)
 def_qty = st.sidebar.number_input("Quantity", value=1)
 
-# 🧠 Live WebSocket Feed
-client_code = os.getenv("ANGEL_CLIENT_CODE")
-feed_token = os.getenv("ANGEL_FEED_TOKEN")
-api_key = os.getenv("ANGEL_API_KEY")
-
-symbol_dropdown = st.sidebar.selectbox("📈 Select Nifty 35 Stock", ["RELIANCE-EQ", "INFY-EQ", "HDFCBANK-EQ", "TCS-EQ", "ICICIBANK-EQ"])
-realtime_placeholder = st.empty()
-live_prices = []
-
-async def connect_websocket(symbol):
-    url = f"wss://smartapisocket.angelone.in/smart-stream?clientCode={client_code}&feedToken={feed_token}&apiKey={api_key}"
-    async with websockets.connect(url) as ws:
-        sub_request = json.dumps({
-            "action": 1,
-            "params": {
-                "mode": "LTP",
-                "tokenList": [
-                    {
-                        "exchangeType": "1",
-                        "symbolToken": symbol,
-                        "productType": "EQUITY"
-                    }
-                ]
-            }
-        })
-        await ws.send(sub_request)
-
-        async def keep_alive():
-            while True:
-                try:
-                    await ws.send('ping')
-                except:
-                    break
-                await asyncio.sleep(30)
-
-        asyncio.create_task(keep_alive())
-
-        while True:
-            response = await ws.recv()
-            data = json.loads(response)
-            if 'ltp' in data:
-                live_prices.append(data)
-
-                # AI Prediction + Action
-                signal = get_final_signal(data['ltp'], ai_model)
-                if signal == "BUY":
-                    place_order(symbol_dropdown, "BUY", def_qty)
-                    send_telegram_alert(symbol_dropdown, "BUY", data['ltp'], def_tp, def_sl)
-                elif signal == "SELL":
-                    place_order(symbol_dropdown, "SELL", def_qty)
-                    send_telegram_alert(symbol_dropdown, "SELL", data['ltp'], def_tp, def_sl)
-
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(y=[p['ltp'] for p in live_prices], mode="lines+markers", name=symbol_dropdown))
-                realtime_placeholder.plotly_chart(fig, use_container_width=True)
-
-threading.Thread(target=lambda: asyncio.run(connect_websocket(symbol_dropdown)), daemon=True).start()
-
-# ✅ Google Sheet setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
 required_columns = [
@@ -168,21 +110,64 @@ else:
     st.error("❌ Google credentials not set")
     df_trades = pd.DataFrame(columns=required_columns)
 
+st.sidebar.header("📈 Live Nifty 35 Chart")
+selected_stock = st.sidebar.selectbox("Choose Stock", STOCK_LIST)
+
+placeholder = st.empty()
+latest_price = st.empty()
+
+async def live_websocket_feed():
+    url = f"wss://smartapisocket.angelone.in/smart-stream?clientCode={os.getenv('ANGEL_CLIENT_CODE')}&feedToken={os.getenv('ANGEL_FEED_TOKEN')}&apiKey={os.getenv('ANGEL_API_KEY')}"
+    async with websockets.connect(url) as ws:
+        await ws.send(json.dumps({
+            "task": "cn", "channel": "nse_cm|{symbol_token}", "token": os.getenv("ANGEL_FEED_TOKEN"), "user": os.getenv("ANGEL_CLIENT_CODE")
+        }))
+
+        while True:
+            try:
+                msg = await ws.recv()
+                data = json.loads(msg)
+                ltp = float(data['ltp']) if 'ltp' in data else None
+                ts = datetime.now()
+                if ltp:
+                    fig = go.Figure(go.Indicator(mode="number+delta", value=ltp, title=f"Live Price - {selected_stock}"))
+                    placeholder.plotly_chart(fig, use_container_width=True)
+                    signal = get_final_signal(selected_stock, ltp, ai_model)
+                    if signal == "BUY":
+                        place_order(selected_stock, "BUY", def_qty)
+                        send_telegram_alert(selected_stock, "BUY", ltp, def_tp, def_sl)
+                    elif signal == "SELL":
+                        place_order(selected_stock, "SELL", def_qty)
+                        send_telegram_alert(selected_stock, "SELL", ltp, def_tp, def_sl)
+                await asyncio.sleep(1)
+            except Exception as e:
+                print(f"WebSocket error: {e}")
+                break
+
+def start_websocket():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(live_websocket_feed())
+
+threading.Thread(target=start_websocket, daemon=True).start()
+
+manual_trade_ui(STOCK_LIST, def_tp, def_sl, available_funds)
+
 # ✅ Holdings display
 st.sidebar.header("📊 Holdings Portfolio")
 holdings = load_holdings()
-if holdings:
-    for symbol, data in holdings.items():
-        entry_price = data["entry"]
-        qty = data["qty"]
-        buy_time = datetime.fromisoformat(data["buy_time"])
-        live_price = get_live_price(symbol)
-        pnl = (live_price - entry_price) * qty
-        st.sidebar.write(f"**{symbol}**")
-        st.sidebar.write(f"🟢 Entry: ₹{entry_price:.2f} | 📈 Live: ₹{live_price:.2f} | 💰 PnL: ₹{pnl:.2f}")
-        st.sidebar.write("---")
-else:
-    st.sidebar.success("✅ No current holdings.")
+for symbol, data in holdings.copy().items():
+    entry = data["entry"]
+    qty = data["qty"]
+    buy_time = datetime.fromisoformat(data["buy_time"])
+    current_price = get_live_price(symbol)
+    if should_exit_trade(symbol, entry, buy_time, def_tp, def_sl, trailing_buffer=2.5, max_days=3):
+        place_order(symbol, "SELL", qty)
+        send_telegram_alert(symbol, "SELL", current_price, 0, 0)
+        holdings.pop(symbol, None)
+        save_holdings(holdings)
+        st.warning(f"🚨 Auto EXIT: {symbol} at ₹{current_price:.2f}")
+
 
 # ✅ Chart section
 st.sidebar.header("📈 Bot Traded Stock Chart")
