@@ -130,7 +130,7 @@ else:
 
 # ✅ Chart section
 st.sidebar.header("📈 Bot Traded Stock Chart")
-bot_symbols = sorted(df_trades["symbol"].dropna().unique().tolist())
+bot_symbols = sorted(STOCK_LIST)
 bot_stock = st.sidebar.selectbox("View Traded Stock", bot_symbols)
 
 if bot_stock:
