@@ -129,6 +129,7 @@ def trade_logic():
         return
     print(f"🚀 Starting trade logic at {datetime.now()}")
     top_stocks = []
+    trades_executed = False  # ✅ Initialize
 
     for symbol in STOCK_LIST:
         try:
@@ -156,9 +157,15 @@ def trade_logic():
                     "qty": max_qty
                 }
                 available_funds -= max_qty * entry_price
+                trades_executed = True  # ✅ Mark trade done
                 print(f"✅ Bought {symbol} × {max_qty} at ₹{entry_price:.2f} | ₹{available_funds:.2f} left")
+                send_telegram_alert(symbol, "BUY", entry_price, reason="AI Strategy")
         except Exception as e:
             print(f"❌ Order error for {symbol}: {e}")
+
+    # ✅ Send fallback message if no trade happened
+    if not trades_executed:
+        send_telegram_alert("BOT", "INFO", 0, reason="No trades executed today. All signals were HOLD or insufficient funds.")
 
 def monitor_holdings():
     for symbol, info in list(portfolio.items()):
