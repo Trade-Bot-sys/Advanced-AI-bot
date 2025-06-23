@@ -3,32 +3,33 @@ import os
 import json
 import pandas as pd
 import streamlit as st
-import yfinance as yf
 import plotly.graph_objects as go
 import base64
 import joblib
 import requests
 from datetime import datetime
 from io import BytesIO
+import asyncio
+import websockets
+import threading
+import time
 from alerts import send_telegram_alert, send_trade_summary_email, send_general_telegram_message
 from generate_access_token import generate_token
-from executor import get_live_price
+from executor import get_live_price, place_order
 from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade, get_market_status
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
-from angel_api import place_order, cancel_order, get_ltp, get_trade_book
+from angel_api import get_ltp, get_trade_book
 from utils import convert_to_ist
 from token_utils import fetch_access_token_from_gist, is_token_fresh
 from funds import get_available_funds
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import time
 
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
 
-# ✅ Auto Token Refresh via URL
 params = st.query_params
 if 'refresh' in params:
     st.title("🔄 Angel One Token Refresh")
@@ -42,7 +43,6 @@ if 'refresh' in params:
         st.error(f"❌ Failed to refresh token: {e}")
         st.stop()
 
-# ✅ Load AI model from Gist
 MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model_b64.txt"
 
 @st.cache_resource(show_spinner="🔄 Loading AI model from Gist...")
@@ -64,7 +64,6 @@ except Exception as e:
     ai_model = None
     st.sidebar.error(f"❌ Failed to load model: {e}")
 
-# 📊 Fetch funds using Angel One API
 funds_data = get_available_funds()
 if funds_data and funds_data.get("status"):
     available_funds = float(funds_data["data"].get("availablecash", 0.0))
@@ -73,18 +72,75 @@ else:
     available_funds = 0.0
     st.sidebar.error(f"Failed to fetch funds: {funds_data.get('error', 'Unknown error')}")
 
-# ✅ Load Nifty 500
+STOCK_LIST = []
 try:
     df_stocks = pd.read_csv("nifty500list.csv")
     STOCK_LIST = [f"{s.strip()}.NS" for s in df_stocks["Symbol"] if isinstance(s, str)]
 except:
     STOCK_LIST = ["RELIANCE.NS", "TCS.NS"]
 
-# ✅ Sidebar Settings
 st.sidebar.header("⚙️ Trade Settings")
 def_tp = st.sidebar.number_input("Take Profit (₹)", value=10.0)
 def_sl = st.sidebar.number_input("Stop Loss (₹)", value=5.0)
 def_qty = st.sidebar.number_input("Quantity", value=1)
+
+# 🧠 Live WebSocket Feed
+client_code = os.getenv("ANGEL_CLIENT_CODE")
+feed_token = os.getenv("ANGEL_FEED_TOKEN")
+api_key = os.getenv("ANGEL_API_KEY")
+
+symbol_dropdown = st.sidebar.selectbox("📈 Select Nifty 35 Stock", ["RELIANCE-EQ", "INFY-EQ", "HDFCBANK-EQ", "TCS-EQ", "ICICIBANK-EQ"])
+realtime_placeholder = st.empty()
+live_prices = []
+
+async def connect_websocket(symbol):
+    url = f"wss://smartapisocket.angelone.in/smart-stream?clientCode={client_code}&feedToken={feed_token}&apiKey={api_key}"
+    async with websockets.connect(url) as ws:
+        sub_request = json.dumps({
+            "action": 1,
+            "params": {
+                "mode": "LTP",
+                "tokenList": [
+                    {
+                        "exchangeType": "1",
+                        "symbolToken": symbol,
+                        "productType": "EQUITY"
+                    }
+                ]
+            }
+        })
+        await ws.send(sub_request)
+
+        async def keep_alive():
+            while True:
+                try:
+                    await ws.send('ping')
+                except:
+                    break
+                await asyncio.sleep(30)
+
+        asyncio.create_task(keep_alive())
+
+        while True:
+            response = await ws.recv()
+            data = json.loads(response)
+            if 'ltp' in data:
+                live_prices.append(data)
+
+                # AI Prediction + Action
+                signal = get_final_signal(data['ltp'], ai_model)
+                if signal == "BUY":
+                    place_order(symbol_dropdown, "BUY", def_qty)
+                    send_telegram_alert(symbol_dropdown, "BUY", data['ltp'], def_tp, def_sl)
+                elif signal == "SELL":
+                    place_order(symbol_dropdown, "SELL", def_qty)
+                    send_telegram_alert(symbol_dropdown, "SELL", data['ltp'], def_tp, def_sl)
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(y=[p['ltp'] for p in live_prices], mode="lines+markers", name=symbol_dropdown))
+                realtime_placeholder.plotly_chart(fig, use_container_width=True)
+
+threading.Thread(target=lambda: asyncio.run(connect_websocket(symbol_dropdown)), daemon=True).start()
 
 # ✅ Google Sheet setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
