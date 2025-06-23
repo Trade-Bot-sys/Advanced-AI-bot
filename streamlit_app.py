@@ -88,8 +88,12 @@ def load_master():
 
 symbol_token_df = load_master()
 def get_token(symbol):
-    token_row = symbol_token_df[symbol_token_df['symbol'] == symbol.replace(".NS", "")]
-    return str(token_row.iloc[0]['token']) if not token_row.empty else ""
+    try:
+        token_row = symbol_token_df[symbol_token_df['symbol'] == symbol.replace(".NS", "")]
+        return str(token_row.iloc[0]['token'])
+    except IndexError:
+        print(f"⚠️ Token not found for: {symbol}")
+        return ""
 
 # === WebSocket Feed ===
 async def live_websocket():
