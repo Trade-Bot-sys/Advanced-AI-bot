@@ -193,7 +193,7 @@ if bot_stock:
     st.subheader(f"📊 Live Chart: {bot_stock}")
     placeholder = st.empty()
     for _ in range(30):
-        chart_df = yf.download(bot_stock, period="7d", interval="15m")
+        chart_df = live_price_df  # This should come from your websocket listener
         fig = go.Figure()
         fig.add_trace(go.Candlestick(
             x=chart_df.index, open=chart_df["Open"], high=chart_df["High"],
