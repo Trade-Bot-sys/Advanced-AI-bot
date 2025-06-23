@@ -4,13 +4,11 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
-from utils import convert_to_ist
+from websocket_data import get_realtime_candles  # <-- WebSocket real-time candles
 from token_utils import fetch_model_from_gist
-from websocket_data import get_realtime_candles  # <-- new module for WebSocket price data
-import joblib
 
 # === Load AI Model (From Gist) ===
-MODEL_GIST_URL = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
+MODEL_GIST_URL = "https://gist.githubusercontent.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/nifty25_model.pkl"
 model = None
 ai_enabled = False
 
@@ -40,14 +38,14 @@ def get_ai_signal(symbol):
         return "HOLD"
 
     try:
-        df = get_realtime_candles(symbol, interval='1d', limit=90)
+        df = get_realtime_candles(symbol)
         if df.empty:
             raise ValueError("No price data from websocket")
 
-        df["Return"] = df["close"].pct_change()
-        df["MA10"] = df["close"].rolling(window=10).mean()
-        df["MA20"] = df["close"].rolling(window=20).mean()
-        df["RSI"] = compute_rsi(df["close"].values, 14)
+        df["Return"] = df["Close"].pct_change()
+        df["MA10"] = df["Close"].rolling(window=10).mean()
+        df["MA20"] = df["Close"].rolling(window=20).mean()
+        df["RSI"] = compute_rsi(df["Close"].values, 14)
         df.dropna(inplace=True)
 
         features = ["MA10", "MA20", "RSI"]
@@ -65,10 +63,10 @@ def get_ai_signal(symbol):
 # === 2. RSI Signal Strategy ===
 def get_rsi_signal(symbol):
     try:
-        df = get_realtime_candles(symbol, interval='1d', limit=30)
+        df = get_realtime_candles(symbol)
         if df.empty:
             raise ValueError("No RSI data")
-        rsi = compute_rsi(df["close"].values, 14)[-1]
+        rsi = compute_rsi(df["Close"].values, 14)[-1]
         print(f"[RSI] {symbol}: RSI = {rsi:.2f}")
         if rsi < 30:
             return "BUY"
@@ -135,15 +133,14 @@ def get_final_signal(symbol):
 # === 5. Exit Logic ===
 def should_exit_trade(symbol, entry_price, buy_time, risk=1, reward=3, trailing_buffer=1.5, max_days=3):
     try:
-        df = get_realtime_candles(symbol, interval="1m", limit=60*max_days)
+        df = get_realtime_candles(symbol)
         if df.empty:
             raise ValueError("No intraday data")
 
-        current_price = df["close"].iloc[-1]
+        current_price = df["Close"].iloc[-1]
         days_held = (datetime.now() - buy_time).days
         profit = current_price - entry_price
-
-        peak_price = df["close"].max()
+        peak_price = df["Close"].max()
 
         tp = risk * reward
         sl = risk
