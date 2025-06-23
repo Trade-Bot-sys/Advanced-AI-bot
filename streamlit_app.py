@@ -19,7 +19,7 @@ from strategies import get_final_signal, should_exit_trade
 from scheduler import schedule_daily_trade
 from helpers import load_holdings, save_holdings, run_backtest
 from manual_trade import manual_trade_ui
-from angel_api import get_ltp, get_token_for_symbol
+from angel_api import get_ltp
 from utils import convert_to_ist
 from token_utils import is_token_fresh
 from funds import get_available_funds
