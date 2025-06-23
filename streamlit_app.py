@@ -161,14 +161,20 @@ for symbol, data in holdings.copy().items():
 
 # === Backtest Panel ===
 st.header("🧪 Backtest AI Strategy")
+
 bt_symbol = st.selectbox("Choose Stock", STOCK_LIST)
+
 if st.button("Run Backtest"):
     try:
-        df = pd.read_csv("historical_data.csv")  # Replace with actual data
-        result = run_backtest(df, ai_model)
-        st.line_chart(result["df"]["Equity Curve"])
-        st.metric("Accuracy", f"{result['accuracy']:.2%}")
-        st.metric("Return", f"{result['return']:.2%}")
+        df_all = pd.read_csv("nifty35_6years_yfinance.csv")  # ✅ Uploaded file
+        df_symbol = df_all[df_all["Symbol"] == bt_symbol.replace(".NS", "")]
+        if df_symbol.empty:
+            st.warning(f"No historical data found for {bt_symbol}")
+        else:
+            result = run_backtest(df_symbol, ai_model)
+            st.line_chart(result["df"]["Equity Curve"])
+            st.metric("Accuracy", f"{result['accuracy']:.2%}")
+            st.metric("Return", f"{result['return']:.2%}")
     except Exception as e:
         st.error(f"❌ Backtest Error: {e}")
 
