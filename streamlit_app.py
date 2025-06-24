@@ -186,3 +186,11 @@ if st.button("📲 Test Telegram Alert"):
 # === Daily Scheduler ===
 schedule_daily_trade()
 st.success("✅ Dashboard fully loaded with Angel One, WebSocket, AI Model")
+
+def run_scheduler_background():
+    try:
+        schedule_daily_trade()
+    except Exception as e:
+        print(f"❌ Scheduler failed to start: {e}")
+
+threading.Thread(target=run_scheduler_background, daemon=True).start()
