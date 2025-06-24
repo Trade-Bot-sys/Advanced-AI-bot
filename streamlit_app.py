@@ -23,6 +23,7 @@ from angel_api import get_ltp
 from utils import convert_to_ist
 from token_utils import is_token_fresh
 from funds import get_available_funds
+from bot import trade_logic, monitor_holdings
 
 st.set_page_config(layout="wide", page_title="Smart AI Trading Dashboard")
 st.title("📈 Smart AI Trading Dashboard - Angel One")
