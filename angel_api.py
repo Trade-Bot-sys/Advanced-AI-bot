@@ -44,7 +44,14 @@ def place_order(tradingsymbol, transactiontype, quantity, exchange="NSE", produc
     })
     conn.request("POST", "/rest/secure/angelbroking/order/v1/placeOrder", payload, HEADERS)
     res = conn.getresponse()
-    return res.read().decode("utf-8")
+    data = json.loads(res.read().decode("utf-8"))
+
+    # ✅ Add this logging block:
+    if data.get("status") != True:
+        print(f"❌ Order FAILED for {tradingsymbol}: {data}")
+    else:
+        print(f"✅ Order SUCCESS for {tradingsymbol}: {data}")
+    return data
 
 
 def modify_order(orderid, new_price, new_quantity):
