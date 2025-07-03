@@ -129,17 +129,19 @@ def trade_logic():
         return
     print(f"🚀 Starting trade logic at {datetime.now()}")
     top_stocks = []
-    trades_executed = False  # ✅ Initialize
+    trades_executed = False
 
     for symbol in STOCK_LIST:
         try:
             signal = predict_signal(symbol)
             if signal == "BUY":
                 price = get_live_price(symbol)
-                if available_funds >= price:
+                if price and available_funds >= price:
                     top_stocks.append(symbol)
         except Exception as e:
-            print(f"⚠️ Error on {symbol}: {e}")
+            msg = f"⚠️ Signal error on {symbol}: {e}"
+            print(msg)
+            send_telegram_alert(symbol, "ERROR", 0, reason=msg)
 
     top_stocks = top_stocks[:5]
 
@@ -147,25 +149,45 @@ def trade_logic():
         try:
             if symbol in portfolio:
                 continue
+
             entry_price = get_live_price(symbol)
+            if not entry_price:
+                print(f"❌ Could not fetch live price for {symbol}")
+                continue
+
             max_qty = int(available_funds // entry_price)
-            if max_qty >= 1:
-                place_order(symbol, "BUY", max_qty)
+            if max_qty < 1:
+                print(f"⚠️ Not enough funds for {symbol}")
+                continue
+
+            response = place_order(symbol, "BUY", max_qty)
+            print(f"📤 Order response for {symbol}: {response}")
+
+            if response and isinstance(response, dict) and response.get("status"):
                 portfolio[symbol] = {
                     "entry": entry_price,
                     "time": datetime.now(),
                     "qty": max_qty
                 }
                 available_funds -= max_qty * entry_price
-                trades_executed = True  # ✅ Mark trade done
+                trades_executed = True
                 print(f"✅ Bought {symbol} × {max_qty} at ₹{entry_price:.2f} | ₹{available_funds:.2f} left")
                 send_telegram_alert(symbol, "BUY", entry_price, reason="AI Strategy")
-        except Exception as e:
-            print(f"❌ Order error for {symbol}: {e}")
+            else:
+                msg = f"❌ Failed to place BUY order for {symbol}: {response}"
+                print(msg)
+                send_telegram_alert(symbol, "ERROR", 0, reason=msg)
 
-    # ✅ Send fallback message if no trade happened
+        except Exception as e:
+            msg = f"❌ Order error for {symbol}: {e}"
+            print(msg)
+            send_telegram_alert(symbol, "ERROR", 0, reason=msg)
+
     if not trades_executed:
-        send_telegram_alert("BOT", "INFO", 0, reason="No trades executed today. All signals were HOLD or insufficient funds.")
+        msg = "⚠️ No trades executed today. All signals were HOLD or insufficient funds."
+        print(msg)
+        send_telegram_alert("BOT", "INFO", 0, reason=msg)
+
 
 def monitor_holdings():
     for symbol, info in list(portfolio.items()):
