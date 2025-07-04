@@ -145,6 +145,27 @@ threading.Thread(target=lambda: asyncio.run(live_websocket()), daemon=True).star
 # === Manual Trade UI ===
 manual_trade_ui(STOCK_LIST, def_tp, def_sl, available_cash)
 
+def show_last_trade():
+    log_file = "logs/trades.csv"
+    if not os.path.exists(log_file):
+        st.sidebar.info("📭 No trades yet.")
+        return
+
+    df = pd.read_csv(log_file)
+    if df.empty:
+        st.sidebar.info("📭 No trades yet.")
+        return
+
+    last = df.iloc[-1]
+
+    st.sidebar.markdown("## 🧾 Last Trade")
+    st.sidebar.success(f"🕒 {last['timestamp']}")
+    st.sidebar.markdown(f"**Symbol:** `{last['symbol']}`")
+    st.sidebar.markdown(f"**Option:** `{last['option']}`")
+    st.sidebar.markdown(f"**Strike:** `{last['strike']}`")
+    st.sidebar.markdown(f"**Signal:** `{last['signal']}`")
+    st.sidebar.markdown(f"**Qty:** `{last['qty']}`")
+
 # === Holdings Auto-Exit ===
 st.sidebar.header("📊 Holdings Portfolio")
 holdings = load_holdings()
