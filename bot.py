@@ -21,6 +21,8 @@ import requests
 from io import BytesIO
 from funds import get_available_funds
 from token_utils import fetch_access_token_from_gist
+from model.signal_predictor import predict_signal
+from fno_executor import place_order_fno
 
 # ✅ Load access token
 gist_url = "https://gist.github.com/Trade-Bot-sys/c4a038ffd89d3f8b13f3f26fb3fb72ac/raw/access_token.json"
@@ -75,6 +77,12 @@ def is_market_open():
     now = datetime.now().time()
     return time(9, 15) <= now <= time(15, 30)
 
+
+def run():
+    for symbol in ["NIFTY", "BANKNIFTY"]:
+        signal = predict_signal(symbol)
+        place_order_fno(symbol, signal, qty=50)
+        
 def plot_trade_chart(symbol, entry_price, exit_price):
     try:
         df = yf.download(symbol, period="30d", interval="1d")
@@ -212,7 +220,7 @@ def monitor_holdings():
                 print(f"💰 Sold {symbol} | PnL: ₹{pnl:.2f}")
         except Exception as e:
             print(f"❌ Monitoring error for {symbol}: {e}")
-
+        
 # ✅ Run the bot
 if __name__ == "__main__":
     trade_logic()
